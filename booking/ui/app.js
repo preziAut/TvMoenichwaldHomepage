@@ -11,7 +11,8 @@ let state,selected,requestKey;
 const displayTime=iso=>new Intl.DateTimeFormat('de-AT',{timeZone:'Europe/Vienna',hour:'2-digit',minute:'2-digit'}).format(new Date(iso));
 const displayDate=iso=>new Intl.DateTimeFormat('de-AT',{timeZone:'Europe/Vienna',dateStyle:'medium',timeStyle:'short'}).format(new Date(iso));
 async function api(path,method='GET',body) {
-  const response=await fetch(path,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
+  const response=window.bookingDemoRequest ? await window.bookingDemoRequest(path,method,body) :
+    await fetch(path,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});
   const data=await response.json();
   if(!response.ok) throw new Error(errors[data.error]??'Die Anfrage konnte nicht abgeschlossen werden. Bitte erneut versuchen.');
   return data;

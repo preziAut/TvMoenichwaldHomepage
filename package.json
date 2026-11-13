@@ -8,7 +8,7 @@
   },
   "scripts": {
     "dev": "node scripts/astro.mjs dev --host 127.0.0.1",
-    "build": "node scripts/redirect-data.mjs && node scripts/astro.mjs build",
+    "build": "node scripts/redirect-data.mjs && node scripts/astro.mjs build && npm --prefix booking ci --ignore-scripts && node booking/tools/build-demo.mjs",
     "preview": "node scripts/astro.mjs preview --host 127.0.0.1",
     "check": "node scripts/astro.mjs check",
     "test": "node scripts/redirect-data.mjs && node --test tests/*.test.mjs",

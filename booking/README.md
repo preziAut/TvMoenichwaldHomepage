@@ -2,7 +2,13 @@
 
 Dieser Bereich enthält die ep-3-Importprobe sowie einen funktionsfähigen Buchungskern mit lokaler Testoberfläche. Noch keine neue öffentlich nutzbare Buchungsanwendung, keine produktive Anmeldung und kein produktiver Datenbankwechsel.
 
-## Lokale Buchungsdemo
+## Isolierte Cloudflare-Demo
+
+Der Website-Build erzeugt zusätzlich `/buchung-demo/`. Diese ausdrücklich gekennzeichnete Online-Demo läuft vollständig im Browser mit PGlite und synthetischen Konten. Jeder Tab erhält eine eigene Datenbank im Arbeitsspeicher; Neuladen setzt sie zurück. Es gibt dort keine serverseitige Buchungs-API, keine echten Nutzer und keine geteilten Reservierungen. Die Testrollen sind nur auf diesen isolierten Bestand anwendbar. Keine ep-3-Importdaten gelangen in diesen Build.
+
+`tools/build-demo.mjs` bündelt dieselbe Fachlogik für den Browser und kopiert ausschließlich die ausgewählten UI-/WASM-Dateien. Der Haupt-Build installiert dazu die gelockten Abhängigkeiten aus `booking/package-lock.json`. Alle Dateien bleiben unter dem Cloudflare-Pages-Einzeldateilimit. Der produktive Mehrbenutzerbetrieb mit PostgreSQL und echter Anmeldung ist davon unabhängig und noch nicht freigegeben.
+
+## Lokale HTTP-Demo
 
 Node 24 verwenden. Aus `booking/`:
 

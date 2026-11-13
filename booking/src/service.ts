@@ -1,5 +1,5 @@
-import { randomUUID } from 'node:crypto';
 import type { Connection, Database } from './database.ts';
+const randomUUID = () => globalThis.crypto.randomUUID();
 
 // Identity must come from a verified server session, never a public request body.
 export type Identity = { clubId: string; memberId: string };
