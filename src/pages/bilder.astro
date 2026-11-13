@@ -1,0 +1,4 @@
+---
+import Layout from '../layouts/Layout.astro';import Card from '../components/Card.astro';import {getCollection,render}from'astro:content';const galleries=await getCollection('galerien');const page=(await getCollection('seiten')).find(p=>p.data.legacyId==='108')!;const{Content}=await render(page);
+---
+<Layout title="Bilder & Galerien"><div class="page-head"><div class="wrap"><p class="eyebrow">Gemeinsam erlebt</p><h1 class="page-title">Unser Verein in Bildern.</h1><p>Turniere, Mannschaften und die kleinen Momente dazwischen.</p></div></div><section class="section wrap"><div class="cards">{galleries.filter(g=>g.data.images.length).map(g=><Card title={g.data.title} url={g.data.url} image={g.data.images[0]?.thumb} label={`${g.data.images.length} Bilder`}/>)}</div><details class="content"><summary>Weitere Bilder und Inhalte der bisherigen Bilderseite</summary><div class="prose"><Content/></div></details></section></Layout>

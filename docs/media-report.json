@@ -1,0 +1,12 @@
+{
+  "attachments": 279,
+  "migrated": 279,
+  "issues": [],
+  "excludedLegacyDemoImages": 9,
+  "legacyGalleryTables": {
+    "wp_bwg_gallery": 1,
+    "wp_bwg_image": 5,
+    "wp_huge_itgallery_gallerys": 2,
+    "wp_huge_itgallery_images": 14
+  }
+}

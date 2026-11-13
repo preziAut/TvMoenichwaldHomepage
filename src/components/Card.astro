@@ -1,0 +1,5 @@
+---
+interface Props{title:string;url:string;image?:string;description?:string;label?:string;}
+const{title,url,image,description,label}=Astro.props;
+---
+<a class="card" href={url}>{image&&<img src={image.replace('-1600.webp','-640.webp')} alt="" loading="lazy" width="640" height="410"/>}<div class="card-body"><small>{label||'Vereinsleben'}</small><h3>{title}</h3>{description&&<p>{description}</p>}<span class="arrow">Mehr erfahren ↗</span></div></a>

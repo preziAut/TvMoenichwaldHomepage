@@ -1,0 +1,4 @@
+---
+import Layout from '../../layouts/Layout.astro';import{getCollection}from'astro:content';export async function getStaticPaths(){return(await getCollection('termine')).map(entry=>({params:{slug:entry.id},props:{entry}}));}const{entry}=Astro.props;const e=entry.data;const format=(s:string)=>s.slice(0,10).split('-').reverse().join('.')+(e.allDay?'':` · ${s.slice(11,16)} Uhr`);
+---
+<Layout title={e.title}><div class="page-head"><div class="wrap"><p class="eyebrow"><a href="/veranstaltungen/">Veranstaltungen</a></p><h1 class="page-title">{e.title}</h1><p>{format(e.start)} — {format(e.end)} · Europe/Vienna</p></div></div><div class="wrap content prose"><p style="white-space:pre-line">{e.description}</p><a href="/veranstaltungen/">← Zurück zu allen Terminen</a></div></Layout>
