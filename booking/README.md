@@ -1,6 +1,29 @@
 # Neues Buchungssystem – Datenaufnahme und Importprobe
 
-Dieser Bereich enthält die erste Entwicklungsstufe: einen offline ausgeführten Import aus ep-3 sowie das Zielmodell. Noch keine neue öffentlich nutzbare Buchungsanwendung, keine Anmeldung und kein produktiver Datenbankwechsel.
+Dieser Bereich enthält die ep-3-Importprobe sowie einen funktionsfähigen Buchungskern mit lokaler Testoberfläche. Noch keine neue öffentlich nutzbare Buchungsanwendung, keine produktive Anmeldung und kein produktiver Datenbankwechsel.
+
+## Lokale Buchungsdemo
+
+Node 24 verwenden. Aus `booking/`:
+
+```powershell
+npm ci --ignore-scripts
+npm run check
+npm test
+npm run dev
+```
+
+Auf diesem Windows-Rechner ist Node 24 bereits unter `../node_modules/node/bin/node.exe` vorhanden. Alternativer Start: `../node_modules/node/bin/node.exe src/dev-server.ts`.
+
+Adresse: http://127.0.0.1:4390/ . Demokonten für beide Vereine, je eine Mitglieds- und Adminrolle. Alle Daten sind erfunden, liegen in einer lokalen PGlite-Testdatenbank im Arbeitsspeicher und verschwinden beim Neustart. Die Demo ist ausschließlich an die Loopback-Adresse gebunden; Host- und Origin-Prüfungen begrenzen Zugriffe auf diese lokale Adresse. Nicht über einen Tunnel veröffentlichen. Rollenwechsel ist eine ausdrücklich lokale Testfunktion, keine echte Anmeldung.
+
+Umgesetzt: Kalender und Buchung/Stornierung, Platzsperren durch Administratoren, Fristverwaltung pro Verein mit versionierten Regeln, bestehende Fristen pro Buchung, Audit-Einträge, Idempotenz, atomarer Überlappungsschutz, Öffnungszeiten/Zeitfenster/Dauerlimits sowie vereinsbezogene Autorisierung. Der Kalender gibt keine fremden Mitgliedskennungen oder internen Sperrbegründungen aus.
+
+`src/service.ts` enthält die serverseitige Fachlogik. `src/database.ts` stellt den PostgreSQL-Transaktionsadapter bereit. `migrations/001_core.sql` enthält das neue Schema; diese eigens geschriebene Schemadatei darf in Git, SQL-Sicherungen weiterhin nicht. Die Migration wird in der Demo einmal auf einer leeren Datenbank ausgeführt; ein Produktions-Migrationsrunner fehlt noch.
+
+Die TypeScript-Tests laufen lokal mit PGlite und in CI zusätzlich gegen einen frischen PostgreSQL-17-Dienst mit mehreren Verbindungen. **`BOOKING_TEST_DATABASE_URL` ausschließlich für eine leere, wegwerfbare Testdatenbank setzen**: Die Tests erzeugen Tabellen und leeren diese zwischen Fällen. Niemals eine echte Datenbank angeben.
+
+Browserprüfung: Buchung und Stornierung, Adminänderung von zwei auf drei Stunden bei unveränderter alter Buchungsfrist, unabhängige Waldbach-Regeln sowie Smartphonebreite 390 px ohne horizontales Überlaufen. Produktive Identität/Passwortaktivierung, Mailversand, dauerhafte Betriebsdatenbank, Serien, vollständige Datenübernahme aus der Importprobe und Deployment bleiben weitere Entwicklungsarbeit. Demo und echte Importdaten werden nicht verbunden.
 
 ## Ausführen
 

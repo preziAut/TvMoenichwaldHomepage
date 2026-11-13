@@ -19,3 +19,35 @@ jobs:
         with:
           python-version: '3.12'
       - run: python -m unittest discover -s booking/tests -v
+  booking-core:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: booking_test
+          POSTGRES_PASSWORD: test_only_local_ci
+          POSTGRES_DB: booking_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: booking
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: booking/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm run check
+      - run: npm test
+      - run: npm test
+        env:
+          BOOKING_TEST_DATABASE_URL: postgresql://booking_test:test_only_local_ci@127.0.0.1:5432/booking_test

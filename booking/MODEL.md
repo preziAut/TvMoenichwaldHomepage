@@ -1,6 +1,6 @@
 # Zielmodell und Umsetzung des neuen Buchungssystems
 
-Status: Entwurf nach Prüfung beider ep-3-Dumps, 13.11.2026. Das ausführbare SQLite-Modell in `tools/migrate.py` dient ausschließlich der Importprobe. Das folgende Produktionsmodell ist noch nicht implementiert.
+Status: Entwurf nach Prüfung beider ep-3-Dumps, 13.11.2026. Das ausführbare SQLite-Modell in `tools/migrate.py` dient ausschließlich der Importprobe. Ein erster PostgreSQL-Buchungskern ist in `src/service.ts` und `migrations/001_core.sql` implementiert: Vereine, Mitglieder, Plätze, Regelversionen, Belegungen und Audit-Ereignisse. Die lokale Oberfläche testet diesen Kern mit synthetischen Daten. Weitere unten beschriebene Entitäten sind noch Entwurf.
 
 ## Grenzen und Identitäten
 
