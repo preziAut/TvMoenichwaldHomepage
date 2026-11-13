@@ -1,5 +1,4 @@
-import ids from '../src/data/legacy-ids.json' with {type:'json'};
-import media from '../src/data/legacy-media.json' with {type:'json'};
+import {ids, media} from '../src/data/legacy-redirects.js';
 export async function onRequest(context){
  const u=new URL(context.request.url);let pathname;try{pathname=decodeURIComponent(u.pathname);}catch{return new Response('Ungültige URL',{status:400});}
  const redirect=target=>Response.redirect(new URL(target,u.origin).href,301);
