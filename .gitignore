@@ -12,3 +12,9 @@ dist/
 
 __pycache__/
 *.pyc
+
+# Private booking rehearsal data never belongs in the public repository.
+booking/.private/
+*.sqlite
+*.sqlite3
+*.db

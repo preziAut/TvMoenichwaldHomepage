@@ -1,0 +1,21 @@
+name: Booking migration checks
+on:
+  push:
+    paths:
+      - 'booking/**'
+      - '.github/workflows/booking-migration.yml'
+  pull_request:
+    paths:
+      - 'booking/**'
+      - '.github/workflows/booking-migration.yml'
+permissions:
+  contents: read
+jobs:
+  synthetic-import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s booking/tests -v
