@@ -18,7 +18,7 @@ Prüfnachweis: https://github.com/preziAut/TvMoenichwaldHomepage/actions/runs/43
 
 ## Noch offene Betriebsabnahme
 
-- Cloudflare-Pages-Deployment, Domainumschaltung und produktive Function-Routen.
+- Domainumschaltung und abschließende Betriebsfreigabe.
 - Echter Kontaktversand/Empfang mit konfigurierten Provider-Zugängen. Tests verwenden simulierte Provider-Antworten.
 - Produktive Reservierung, Benutzerrechte, SMTP und Passwortzurücksetzen in beiden ep-3-Portalen: deren URLs liefern HTTP 403.
 - Webcam-Aktualisierung: bisherige URL liefert HTTP 403.
@@ -26,3 +26,13 @@ Prüfnachweis: https://github.com/preziAut/TvMoenichwaldHomepage/actions/runs/43
 - Provider-Scan, Backup-Wiederherstellung und Freigabe der PHP-Anwendungen.
 
 Die lokale Prüfung ist keine Behauptung einer vollständigen produktiven Betriebsfreigabe.
+
+## Cloudflare-Veröffentlichung am 13. November 2026
+
+- Pages-Projekt `tv-moenichwald` im vom Nutzer ausgewählten Konto `49a1b0704700ec0810ec88b5de2730a1`, Git-Integration mit `main`.
+- Prüfadresse: https://tv-moenichwald.pages.dev (öffentlich, `noindex,nofollow`). Vereinsdomain nicht umgeschaltet.
+- Commit `930425c`: 72 Seiten gebaut, Functions erfolgreich kompiliert, 631 Dateien hochgeladen. Deployment `d53b6102-5008-46db-aaaf-a05d5aa59fab`.
+- GitHub-Prüfungen erfolgreich: https://github.com/preziAut/TvMoenichwaldHomepage/actions/runs/43505964885
+- HTTP-Prüfung: Startseite 200; `/wp/?page_id=35` 301 nach `/verein/`; unbekannte Alt-ID und unbekannter Pfad jeweils 404; Kontakt-GET 405 und unkonfigurierter Kontakt-POST 503; unkonfiguriertes `/ep3wa/` 503.
+- Startseite im Browser: keine defekten Bilder, kein horizontales Überlaufen. Die Prüfung ersetzt nicht die noch offenen Mail-, Buchungs- und Webcam-Tests.
+- Der ältere Pages-Compiler unterstützt JSON-Importattribute nicht. `scripts/redirect-data.mjs` erzeugt deshalb vor Build und Tests ein gewöhnliches ESM-Datenmodul aus den bestehenden JSON-Zuordnungen.

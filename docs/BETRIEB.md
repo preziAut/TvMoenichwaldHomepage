@@ -34,7 +34,7 @@ Die bisherigen Webcam-Adressen unter `/joomla/` dürfen nach dem Hauptdomainwech
 
 Diese Punkte sind nicht durch den lokalen Build erledigt:
 
-- Cloudflare-Zugang, Pages-Projekt, Domainzuordnung und Umgebungsvariablen.
+- Domainzuordnung und produktive Umgebungsvariablen. Pages-Projekt und Git-Integration sind eingerichtet (siehe unten).
 - World4You-Vertrag, Dokumentenverzeichnisse, PHP-Erweiterungen, Datenbankzugang und Backup-Wiederherstellung prüfen.
 - Mönichwald und Waldbach mit aktuellen Datenständen in geschützter Umgebung testen. Der vorhandene Wiederherstellungsbericht bestätigt keine öffentliche Betriebsfreigabe. Waldbach benötigt eine eigene Aufbereitung mit frischen Herstellerdateien.
 - Für beide Portale Login, Passwortzurücksetzen, Rollen, Platzverfügbarkeit, Reservierung/Stornierung und SMTP prüfen. Keine Testbuchungen auf Produktivdaten ohne abgestimmten Testablauf.
@@ -60,5 +60,9 @@ Tägliche Buchungsdatenbanksicherungen getrennt speichern, Wiederherstellung reg
 `dist/` ist statisches HTML und kann auf World4You oder GitHub Pages ausgeliefert werden. Dort funktionieren Cloudflare Functions nicht automatisch: Alt-ID-Weiterleitungen, Kontaktformular und Waldbach-Übergang benötigen dort ein ausdrücklich eingerichtetes Äquivalent. Ein Wechsel ist daher kein bloßes Kopieren mit unveränderter Funktionszusage.
 
 ## Lesende Live-Prüfung am 13.11.2026
+
+Die Astro-Website ist unter https://tv-moenichwald.pages.dev veröffentlicht. Projekt `tv-moenichwald`, Konto `49a1b0704700ec0810ec88b5de2730a1`, automatische Builds aus `main`, Build `npm run build`, Ausgabe `dist`. Der Nutzer hat den Migrationsbranch in `main` zusammengeführt. Die Vereinsdomain wurde nicht umgestellt. Die bestehende MCP-Verbindung ist noch einem anderen Cloudflare-Konto zugeordnet; dieses Projekt wurde über das ausgewählte Browserkonto eingerichtet.
+
+Deploy Hook für den täglichen Neubuild und produktive Mail-/Turnstile-/Buchungs-/Webcam-Variablen sind noch nicht eingerichtet. Die Prüfadresse bleibt bis zur Freigabe auf `noindex,nofollow`.
 
 Die HTTPS-Adressen für Mönichwald, Waldbach und das bisherige Webcam-Bild lieferten jeweils HTTP 403. Kein Login, keine Buchung und kein Versand wurden produktiv durchgeführt. Dies ist keine Funktionsabnahme.
