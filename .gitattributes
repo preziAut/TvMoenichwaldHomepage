@@ -1,0 +1,6 @@
+* text=auto
+*.md text eol=lf whitespace=-blank-at-eol
+*.webp binary
+*.pdf binary
+*.xlsx binary
+*.mp4 binary

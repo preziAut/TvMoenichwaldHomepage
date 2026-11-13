@@ -1,0 +1,4 @@
+---
+import Layout from '../layouts/Layout.astro';import Filters from '../components/Filters.astro';import {getCollection}from'astro:content';const entries=(await getCollection('ergebnisse')).sort((a,b)=>b.data.year.localeCompare(a.data.year));
+---
+<Layout title="Ergebnisse"><div class="page-head"><div class="wrap"><p class="eyebrow">Unsere Vereinsgeschichte in Ergebnissen</p><h1 class="page-title">Große Spiele. Gute Erinnerungen.</h1><p>Die Ergebnisse unserer Vereinsbewerbe nach Jahren. Mannschaftsergebnisse findest du beim <a href="/wechsellandcup/">Wechsellandcup</a>.</p></div></div><section class="section wrap"><Filters years={entries.map(p=>p.data.year)}/>{entries.map(p=><div data-filter-item data-year={p.data.year}><a class="event-row" href={p.data.url}><span class="event-date">{p.data.title}</span><h2>Vereinsmeisterschaften & Turniere</h2><span>↗</span></a></div>)}</section></Layout>

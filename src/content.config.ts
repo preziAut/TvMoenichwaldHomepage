@@ -1,0 +1,6 @@
+import {defineCollection} from 'astro:content';
+import {z} from 'astro/zod';
+import {glob} from 'astro/loaders';
+const article=z.object({title:z.string(),legacyId:z.string().optional(),url:z.string(),date:z.string(),modified:z.string().optional(),categories:z.array(z.string()).default([]),description:z.string().default(''),image:z.string().default(''),year:z.string()});
+const text=(name:string)=>defineCollection({loader:glob({pattern:'**/*.md',base:`./src/content/${name}`}),schema:article});
+export const collections={seiten:text('seiten'),beitraege:text('beitraege'),ergebnisse:text('ergebnisse'),galerien:defineCollection({loader:glob({pattern:'**/*.json',base:'./src/content/galerien'}),schema:z.object({title:z.string(),legacyId:z.string().optional(),url:z.string(),images:z.array(z.object({src:z.string(),thumb:z.string().optional(),alt:z.string(),caption:z.string().default(''),title:z.string().default('')}))})}),termine:defineCollection({loader:glob({pattern:'**/*.json',base:'./src/content/termine'}),schema:z.object({id:z.string(),legacyId:z.string().optional(),title:z.string(),start:z.string(),end:z.string(),description:z.string(),recurrence:z.string(),allDay:z.boolean(),url:z.string()})})};

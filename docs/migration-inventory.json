@@ -1,0 +1,706 @@
+[
+  {
+    "id": "242",
+    "type": "envira",
+    "title": "Damen-Doppelturnier 2019",
+    "target": "/galerien/damen-doppelturnier-2019-242/",
+    "status": "migrated"
+  },
+  {
+    "id": "794",
+    "type": "envira",
+    "title": "Kinder-Tenniscamp 2021",
+    "target": "/galerien/kinder-tenniscamp-2021-794/",
+    "status": "migrated"
+  },
+  {
+    "id": "851",
+    "type": "envira",
+    "title": "Wechsellandcup 2021",
+    "target": "/galerien/wechsellandcup-2021-851/",
+    "status": "migrated"
+  },
+  {
+    "id": "867",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-867/",
+    "status": "migrated"
+  },
+  {
+    "id": "870",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-870/",
+    "status": "migrated"
+  },
+  {
+    "id": "871",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-871/",
+    "status": "migrated"
+  },
+  {
+    "id": "872",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-872/",
+    "status": "migrated"
+  },
+  {
+    "id": "873",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-873/",
+    "status": "migrated"
+  },
+  {
+    "id": "884",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-884/",
+    "status": "migrated"
+  },
+  {
+    "id": "903",
+    "type": "envira",
+    "title": "Bilder",
+    "target": "/galerien/bilder-903/",
+    "status": "migrated"
+  },
+  {
+    "id": "1048",
+    "type": "envira",
+    "title": "Sektturnier 2023",
+    "target": "/galerien/sektturnier-2023-1048/",
+    "status": "migrated"
+  },
+  {
+    "id": "1",
+    "type": "post",
+    "title": "Kategorie Allgemein",
+    "oldUrl": "/wp/?p=1",
+    "target": "/beitraege/kategorie-allgemein-1/",
+    "status": "migrated"
+  },
+  {
+    "id": "271",
+    "type": "post",
+    "title": "2017",
+    "oldUrl": "/wp/?p=271",
+    "target": "/ergebnisse/2017-271/",
+    "status": "migrated"
+  },
+  {
+    "id": "34",
+    "type": "page",
+    "title": "Wechsellandcup",
+    "oldUrl": "/wp/?page_id=34",
+    "target": "/wechsellandcup/",
+    "status": "migrated"
+  },
+  {
+    "id": "35",
+    "type": "page",
+    "title": "Vereinsgeschichte",
+    "oldUrl": "/wp/?page_id=35",
+    "target": "/verein/",
+    "status": "migrated"
+  },
+  {
+    "id": "36",
+    "type": "page",
+    "title": "Kontakt",
+    "oldUrl": "/wp/?page_id=36",
+    "target": "/kontakt/",
+    "status": "migrated"
+  },
+  {
+    "id": "51",
+    "type": "page",
+    "title": "Webcam",
+    "oldUrl": "/wp/?page_id=51",
+    "target": "/webcam/",
+    "status": "migrated"
+  },
+  {
+    "id": "60",
+    "type": "page",
+    "title": "Reservierung",
+    "oldUrl": "/wp/?page_id=60",
+    "target": "/reservierung/",
+    "status": "migrated"
+  },
+  {
+    "id": "382",
+    "type": "post",
+    "title": "2018",
+    "oldUrl": "/wp/?p=382",
+    "target": "/ergebnisse/2018-382/",
+    "status": "migrated"
+  },
+  {
+    "id": "108",
+    "type": "page",
+    "title": "Bilder",
+    "oldUrl": "/wp/?page_id=108",
+    "target": "/bilder/",
+    "status": "migrated"
+  },
+  {
+    "id": "131",
+    "type": "post",
+    "title": "Kategorie Wechsellandcup",
+    "oldUrl": "/wp/?p=131",
+    "target": "/beitraege/kategorie-wechsellandcup-131/",
+    "status": "migrated"
+  },
+  {
+    "id": "139",
+    "type": "post",
+    "title": "Bilder",
+    "oldUrl": "/wp/?p=139",
+    "target": "/beitraege/bilder-139/",
+    "status": "migrated"
+  },
+  {
+    "id": "702",
+    "type": "post",
+    "title": "Mixed Doppelmeisterschaft 2024",
+    "oldUrl": "/wp/?p=702",
+    "target": "/beitraege/mixed-doppelmeisterschaft-2024-702/",
+    "status": "migrated"
+  },
+  {
+    "id": "178",
+    "type": "post",
+    "title": "2002",
+    "oldUrl": "/wp/?p=178",
+    "target": "/ergebnisse/2002-178/",
+    "status": "migrated"
+  },
+  {
+    "id": "180",
+    "type": "post",
+    "title": "2003",
+    "oldUrl": "/wp/?p=180",
+    "target": "/ergebnisse/2003-180/",
+    "status": "migrated"
+  },
+  {
+    "id": "182",
+    "type": "post",
+    "title": "2004",
+    "oldUrl": "/wp/?p=182",
+    "target": "/ergebnisse/2004-182/",
+    "status": "migrated"
+  },
+  {
+    "id": "184",
+    "type": "post",
+    "title": "2005",
+    "oldUrl": "/wp/?p=184",
+    "target": "/ergebnisse/2005-184/",
+    "status": "migrated"
+  },
+  {
+    "id": "186",
+    "type": "post",
+    "title": "2007",
+    "oldUrl": "/wp/?p=186",
+    "target": "/ergebnisse/2007-186/",
+    "status": "migrated"
+  },
+  {
+    "id": "188",
+    "type": "post",
+    "title": "2008",
+    "oldUrl": "/wp/?p=188",
+    "target": "/ergebnisse/2008-188/",
+    "status": "migrated"
+  },
+  {
+    "id": "190",
+    "type": "post",
+    "title": "2009",
+    "oldUrl": "/wp/?p=190",
+    "target": "/ergebnisse/2009-190/",
+    "status": "migrated"
+  },
+  {
+    "id": "192",
+    "type": "post",
+    "title": "2010",
+    "oldUrl": "/wp/?p=192",
+    "target": "/ergebnisse/2010-192/",
+    "status": "migrated"
+  },
+  {
+    "id": "194",
+    "type": "post",
+    "title": "2011",
+    "oldUrl": "/wp/?p=194",
+    "target": "/ergebnisse/2011-194/",
+    "status": "migrated"
+  },
+  {
+    "id": "196",
+    "type": "post",
+    "title": "2012",
+    "oldUrl": "/wp/?p=196",
+    "target": "/ergebnisse/2012-196/",
+    "status": "migrated"
+  },
+  {
+    "id": "198",
+    "type": "post",
+    "title": "2013",
+    "oldUrl": "/wp/?p=198",
+    "target": "/ergebnisse/2013-198/",
+    "status": "migrated"
+  },
+  {
+    "id": "200",
+    "type": "post",
+    "title": "2014",
+    "oldUrl": "/wp/?p=200",
+    "target": "/ergebnisse/2014-200/",
+    "status": "migrated"
+  },
+  {
+    "id": "202",
+    "type": "post",
+    "title": "2015",
+    "oldUrl": "/wp/?p=202",
+    "target": "/ergebnisse/2015-202/",
+    "status": "migrated"
+  },
+  {
+    "id": "204",
+    "type": "post",
+    "title": "2016",
+    "oldUrl": "/wp/?p=204",
+    "target": "/ergebnisse/2016-204/",
+    "status": "migrated"
+  },
+  {
+    "id": "698",
+    "type": "page",
+    "title": "Mitgliedschaft",
+    "oldUrl": "/wp/?page_id=698",
+    "target": "/mitgliedschaft/",
+    "status": "migrated"
+  },
+  {
+    "id": "610",
+    "type": "page",
+    "title": "Home",
+    "oldUrl": "/wp/?page_id=610",
+    "target": "/",
+    "status": "migrated"
+  },
+  {
+    "id": "630",
+    "type": "post",
+    "title": "Tennis Auftakt",
+    "oldUrl": "/wp/?p=630",
+    "target": "/beitraege/tennis-auftakt-630/",
+    "status": "migrated"
+  },
+  {
+    "id": "667",
+    "type": "post",
+    "title": "Platzarbeiten",
+    "oldUrl": "/wp/?p=667",
+    "target": "/beitraege/platzarbeiten-667/",
+    "status": "migrated"
+  },
+  {
+    "id": "669",
+    "type": "post",
+    "title": "Sektturnier 2024",
+    "oldUrl": "/wp/?p=669",
+    "target": "/beitraege/sektturnier-2024-669/",
+    "status": "migrated"
+  },
+  {
+    "id": "673",
+    "type": "post",
+    "title": "Herzlich Willkommen",
+    "oldUrl": "/wp/?p=673",
+    "target": "/beitraege/herzlich-willkommen-673/",
+    "status": "migrated"
+  },
+  {
+    "id": "675",
+    "type": "post",
+    "title": "Schlechtwetter",
+    "oldUrl": "/wp/?p=675",
+    "target": "/beitraege/schlechtwetter-675/",
+    "status": "migrated"
+  },
+  {
+    "id": "677",
+    "type": "post",
+    "title": "Kinder-Tenniscamp 2024",
+    "oldUrl": "/wp/?p=677",
+    "target": "/beitraege/kinder-tenniscamp-2024-677/",
+    "status": "migrated"
+  },
+  {
+    "id": "679",
+    "type": "post",
+    "title": "Herren-Doppelmeisterschaft 2024",
+    "oldUrl": "/wp/?p=679",
+    "target": "/beitraege/herren-doppelmeisterschaft-2024-679/",
+    "status": "migrated"
+  },
+  {
+    "id": "877",
+    "type": "post",
+    "title": "2024",
+    "oldUrl": "/wp/?p=877",
+    "target": "/ergebnisse/2024-877/",
+    "status": "migrated"
+  },
+  {
+    "id": "742",
+    "type": "page",
+    "title": "Veranstaltungen",
+    "oldUrl": "/wp/?page_id=742",
+    "target": "/veranstaltungen/",
+    "status": "migrated"
+  },
+  {
+    "id": "764",
+    "type": "post",
+    "title": "Einzelmeisterschaft 2024",
+    "oldUrl": "/wp/?p=764",
+    "target": "/beitraege/einzelmeisterschaft-2024-764/",
+    "status": "migrated"
+  },
+  {
+    "id": "790",
+    "type": "post",
+    "title": "Wechsellandcup 2024",
+    "oldUrl": "/wp/?p=790",
+    "target": "/beitraege/wechsellandcup-2024-790/",
+    "status": "migrated"
+  },
+  {
+    "id": "80",
+    "type": "ecwd_event",
+    "title": "EVENT 1",
+    "status": "excluded-demo",
+    "reason": "Unmodified plugin demo event"
+  },
+  {
+    "id": "81",
+    "type": "ecwd_event",
+    "title": "EVENT 2",
+    "status": "excluded-demo",
+    "reason": "Unmodified plugin demo event"
+  },
+  {
+    "id": "970",
+    "type": "event",
+    "title": "Kinder-Tenniscamp",
+    "target": "/termine/mc-34/",
+    "status": "migrated"
+  },
+  {
+    "id": "1093",
+    "type": "event",
+    "title": "Ende Vorrunde Herren-Einzelmeisterschaft",
+    "target": "/termine/mc-72/",
+    "status": "migrated"
+  },
+  {
+    "id": "1092",
+    "type": "event",
+    "title": "WLC Damen gegen TC Greinbach in Greinbach",
+    "target": "/termine/mc-71/",
+    "status": "migrated"
+  },
+  {
+    "id": "1091",
+    "type": "event",
+    "title": "WLC Damen gegen Tennis Grafendorf in Grafendorf",
+    "target": "/termine/mc-70/",
+    "status": "migrated"
+  },
+  {
+    "id": "1090",
+    "type": "event",
+    "title": "WLC Damen gegen Friedberg 1 in Mönichwald",
+    "target": "/termine/mc-69/",
+    "status": "migrated"
+  },
+  {
+    "id": "1089",
+    "type": "event",
+    "title": "WLC Damen gegen TC Vorau 1 in Mönichwald",
+    "target": "/termine/mc-68/",
+    "status": "migrated"
+  },
+  {
+    "id": "1088",
+    "type": "event",
+    "title": "WLC Damen gegen SG Pinggau/Dechantskirchen in Mönichwald",
+    "target": "/termine/mc-67/",
+    "status": "migrated"
+  },
+  {
+    "id": "1087",
+    "type": "event",
+    "title": "WLC Finale in Vorau",
+    "target": "/termine/mc-66/",
+    "status": "migrated"
+  },
+  {
+    "id": "1084",
+    "type": "event",
+    "title": "WLC Herren gegen Limbach/Schlag in Limbach",
+    "target": "/termine/mc-63/",
+    "status": "migrated"
+  },
+  {
+    "id": "1085",
+    "type": "event",
+    "title": "WLC Herren gegen Greinbach in Mönichwald",
+    "target": "/termine/mc-64/",
+    "status": "migrated"
+  },
+  {
+    "id": "1086",
+    "type": "event",
+    "title": "WLC Herren gegen Schäffern in Mönichwald",
+    "target": "/termine/mc-65/",
+    "status": "migrated"
+  },
+  {
+    "id": "1083",
+    "type": "event",
+    "title": "WLC Herren gegen Vorau in Vorau",
+    "target": "/termine/mc-62/",
+    "status": "migrated"
+  },
+  {
+    "id": "659",
+    "type": "event",
+    "title": "Sektturnier 2021",
+    "target": "/termine/tribe_events-659/",
+    "status": "migrated"
+  },
+  {
+    "id": "661",
+    "type": "event",
+    "title": "Einzelmeisterschaft",
+    "target": "/termine/tribe_events-661/",
+    "status": "migrated"
+  },
+  {
+    "id": "739",
+    "type": "event",
+    "title": "Einzelmeisterschaft 2021",
+    "target": "/termine/ecwd_event-739/",
+    "status": "migrated"
+  },
+  {
+    "id": "76",
+    "type": "ecwd_calendar",
+    "title": "Kalender",
+    "status": "replaced-or-archived",
+    "reason": "Replaced by events collection"
+  },
+  {
+    "id": "77",
+    "type": "ecwd_venue",
+    "title": "VENUE 1",
+    "status": "replaced-or-archived",
+    "reason": "Plugin demo venue"
+  },
+  {
+    "id": "78",
+    "type": "ecwd_organizer",
+    "title": "ORGANIZER 1",
+    "status": "replaced-or-archived",
+    "reason": "Plugin demo organizer"
+  },
+  {
+    "id": "458",
+    "type": "tribe_venue",
+    "title": "LUXhome Grafendorf Tennis",
+    "status": "replaced-or-archived",
+    "reason": "Related venue metadata retained in migration source locally"
+  },
+  {
+    "id": "87",
+    "type": "tribe_venue",
+    "title": "Tennisplatz Mönichwald",
+    "status": "replaced-or-archived",
+    "reason": "Related venue metadata retained in migration source locally"
+  },
+  {
+    "id": "89",
+    "type": "tribe_organizer",
+    "title": "Gruböck Harald",
+    "status": "replaced-or-archived",
+    "reason": "Related organizer metadata retained in migration source locally"
+  },
+  {
+    "id": "425",
+    "type": "tribe_organizer",
+    "title": "UTV Mönichwald 3",
+    "status": "replaced-or-archived",
+    "reason": "Related organizer metadata retained in migration source locally"
+  },
+  {
+    "id": "336",
+    "type": "tribe_organizer",
+    "title": "UTV Mönichwald 2",
+    "status": "replaced-or-archived",
+    "reason": "Related organizer metadata retained in migration source locally"
+  },
+  {
+    "id": "340",
+    "type": "tribe_organizer",
+    "title": "UTV Mönichwald 1",
+    "status": "replaced-or-archived",
+    "reason": "Related organizer metadata retained in migration source locally"
+  },
+  {
+    "id": "468",
+    "type": "tribe_venue",
+    "title": "TC Neustift",
+    "status": "replaced-or-archived",
+    "reason": "Related venue metadata retained in migration source locally"
+  },
+  {
+    "id": "462",
+    "type": "tribe_venue",
+    "title": "TC Pinggau",
+    "status": "replaced-or-archived",
+    "reason": "Related venue metadata retained in migration source locally"
+  },
+  {
+    "id": "436",
+    "type": "tribe_organizer",
+    "title": "Prettenhofer Angi und Herbert",
+    "status": "replaced-or-archived",
+    "reason": "Related organizer metadata retained in migration source locally"
+  },
+  {
+    "id": "433",
+    "type": "tribe_venue",
+    "title": "TC Schäffern",
+    "status": "replaced-or-archived",
+    "reason": "Related venue metadata retained in migration source locally"
+  },
+  {
+    "id": "100",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "101",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "102",
+    "type": "nav_menu_item",
+    "title": "Stundenreservierung",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "103",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "165",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "169",
+    "type": "cryout_serious_slide",
+    "title": "Sektturnier 2016",
+    "status": "replaced-or-archived",
+    "reason": "Slide content retained as historical gallery image; new static hero"
+  },
+  {
+    "id": "207",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "443",
+    "type": "tribe_organizer",
+    "title": "TV Mönichwald",
+    "status": "replaced-or-archived",
+    "reason": "Related organizer metadata retained in migration source locally"
+  },
+  {
+    "id": "691",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "692",
+    "type": "nav_menu_item",
+    "title": "",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "804",
+    "type": "wpcf7_contact_form",
+    "title": "Kontaktformular 1",
+    "status": "replaced-or-archived",
+    "reason": "Replaced by contact endpoint"
+  },
+  {
+    "id": "746",
+    "type": "nav_menu_item",
+    "title": "Veranstaltungen",
+    "status": "replaced-or-archived",
+    "reason": "Navigation reconstructed in site configuration"
+  },
+  {
+    "id": "850",
+    "type": "elementor_library",
+    "title": "Standard-Kit",
+    "status": "replaced-or-archived",
+    "reason": "Editor configuration, no public content"
+  },
+  {
+    "id": "917",
+    "type": "wp_global_styles",
+    "title": "Custom Styles",
+    "status": "replaced-or-archived",
+    "reason": "Replaced by Tailwind design"
+  },
+  {
+    "id": "1073",
+    "type": "custom_css",
+    "title": "appointment",
+    "status": "replaced-or-archived",
+    "reason": "Replaced by Tailwind design"
+  }
+]

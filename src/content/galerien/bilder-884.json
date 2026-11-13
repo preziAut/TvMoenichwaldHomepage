@@ -1,0 +1,43 @@
+{
+  "title": "Bilder",
+  "legacyId": "884",
+  "url": "/galerien/bilder-884/",
+  "images": [
+    {
+      "src": "/media/e2e15bce1d3302-1600.webp",
+      "thumb": "/media/e2e15bce1d3302-640.webp",
+      "width": 1600,
+      "height": 1200,
+      "alt": "Bilder",
+      "title": "IMG-20210724-WA0005",
+      "caption": ""
+    },
+    {
+      "src": "/media/428ad8ebd9c252-1600.webp",
+      "thumb": "/media/428ad8ebd9c252-640.webp",
+      "width": 1600,
+      "height": 1200,
+      "alt": "Bilder",
+      "title": "IMG-20210724-WA0006",
+      "caption": ""
+    },
+    {
+      "src": "/media/e6a9a88e69a6f2-1600.webp",
+      "thumb": "/media/e6a9a88e69a6f2-640.webp",
+      "width": 1600,
+      "height": 1200,
+      "alt": "Bilder",
+      "title": "IMG-20210724-WA0007",
+      "caption": ""
+    },
+    {
+      "src": "/media/c7de8e28103258-1600.webp",
+      "thumb": "/media/c7de8e28103258-640.webp",
+      "width": 1600,
+      "height": 1200,
+      "alt": "Bilder",
+      "title": "IMG-20210724-WA0008",
+      "caption": ""
+    }
+  ]
+}
