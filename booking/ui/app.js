@@ -1,6 +1,7 @@
+import { setupTournaments } from './tournaments.js';
 import { setupContentDemo } from './content.js';
 const $=id=>document.getElementById(id);
-const errors={INVALID_CONTENT:'Bitte prüfe die Eingaben oder die Bildgröße.',FORBIDDEN:'Dafür fehlt die Berechtigung.',SLOT_TAKEN:'Diese Zeit wurde inzwischen belegt. Bitte wähle eine andere.',
+const errors={INVALID_TOURNAMENT:'Prüfe die Teilnehmerliste oder den Satzstand. Ein Endergebnis muss 6:0 bis 6:4, 7:5 oder 7:6 lauten.',INVALID_CONTENT:'Bitte prüfe die Eingaben oder die Bildgröße.',FORBIDDEN:'Dafür fehlt die Berechtigung.',SLOT_TAKEN:'Diese Zeit wurde inzwischen belegt. Bitte wähle eine andere.',
   CANCELLATION_CLOSED:'Die Stornierungsfrist ist abgelaufen oder Stornieren ist deaktiviert.',
   OUTSIDE_BOOKING_WINDOW:'Die Buchung muss in der Zukunft und innerhalb des Buchungszeitraums liegen.',
   INVALID_SLOT:'Bitte wähle eine gültige Zeit innerhalb der Öffnungszeiten und der maximalen Dauer.',
@@ -19,6 +20,7 @@ async function api(path,method='GET',body) {
   return data;
 }
 function notice(text,error=false) {$('message').textContent=text;$('message').classList.toggle('error',error);}
+const loadTournaments = setupTournaments(api);
 const loadContent = setupContentDemo(api, notice);
 function node(tag,text,cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
 function tabs(admin) {
@@ -55,7 +57,7 @@ function render() {
 }
 async function refresh() {state=await api(`/api/state?day=${encodeURIComponent($('day').value)}`);render();}
 async function chooseIdentity() {
-  try{await api('/api/demo-session','POST',{choice:$('identity').value});await refresh();await loadContent(state.role);tabs(false);notice('');}
+  try{await api('/api/demo-session','POST',{choice:$('identity').value});await refresh();await loadContent(state.role);await loadTournaments(state.role,state.label);tabs(false);notice('');}
   catch(error){notice(error.message,true);}
 }
 function openDialog(court,slot,item) {

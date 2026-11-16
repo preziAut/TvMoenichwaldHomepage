@@ -9,3 +9,21 @@
 .club-content button:not(.primary) { border: 1px solid var(--line); background: white; color: var(--green); padding: 9px; }
 .club-photos { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr)); }
 .club-photos img { width: 100%; height: 160px; object-fit: contain; }
+
+.tournament-panel { margin-block: 3rem; }
+.tournament-intro { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; padding: clamp(1.2rem, 4vw, 2.5rem); border-radius: 20px; background: #18392f; color: #fff; }
+.tournament-intro .eyebrow { color: #e8bb9e; }
+.tournament-intro h2 { font-size: clamp(2.3rem, 7vw, 4rem); margin: 0; }
+.tournament-intro p { margin-block: .35rem; }
+.tournament-editor, .tournament-card, .tournament-empty { margin-top: 1rem; padding: clamp(1rem, 3vw, 1.8rem); background: #fff; border: 1px solid var(--line); border-radius: 16px; }
+.tournament-panel label { display: grid; gap: .35rem; overflow-wrap: anywhere; }
+.tournament-fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 1rem; }
+.tournament-panel input, .tournament-panel select, .tournament-panel textarea { box-sizing: border-box; width: 100%; min-width: 0; }
+.tournament-card ul { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 290px), 1fr)); gap: .9rem; padding: 0; list-style: none; }
+.tournament-match { border-radius: 12px; background: #f0f3ed; padding: 1rem; overflow-wrap: anywhere; }
+.tournament-match h4 { margin-block: .5rem; }
+.tournament-status { margin: 0; font-size: .85rem; font-weight: 700; color: #36584c; }
+.tournament-score { display: block; font-size: 2rem; font-variant-numeric: tabular-nums; }
+.match-editor { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; margin-top: .6rem; }
+.match-editor button { grid-column: 1 / -1; border: 1px solid #a8b8ad; border-radius: 8px; padding: .6rem; background: white; color: #18392f; }
+.match-editor button:last-child { background: #18392f; color: white; }

@@ -1,3 +1,4 @@
+import {createTournamentDemo} from './tournament-demo.ts';
 import {createContentDemo} from './content-demo.ts';
 // Public, per-tab sandbox: no server API, credentials, real accounts or imported data.
 import {PGlite} from '@electric-sql/pglite';
@@ -31,6 +32,7 @@ try {
     await service.updatePolicy({clubId,memberId:admin},0,{cancellationEnabled:true,cancellationSeconds:7200,advanceDays:14,
       slotMinutes:30,maxDurationMinutes:120,openingMinute:360,closingMinute:1440,maxActiveBookings:0});
   }
+  const tournamentDemo = createTournamentDemo();
   const contentDemo = createContentDemo();
   let selected='moenichwald-member';
   const format=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Vienna',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
@@ -45,6 +47,8 @@ try {
       const choice=choices[selected],actor=choice.actor;
       const contentResponse = contentDemo(actor.clubId, choice.role === 'admin', url.pathname, method, body);
       if (contentResponse) return contentResponse;
+      const tournamentResponse = tournamentDemo(actor.clubId, choice.role === 'admin', url.pathname, method, body);
+      if (tournamentResponse) return tournamentResponse;
       if(url.pathname==='/api/state'&&method==='GET') {
         const day=url.searchParams.get('day')??'',utc=Date.parse(day+'T00:00:00Z');
         if(!/^\d{4}-\d\d-\d\d$/.test(day)||!Number.isFinite(utc)||new Date(utc).toISOString().slice(0,10)!==day) return response({error:'INVALID_TIME'},400);

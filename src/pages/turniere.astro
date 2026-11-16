@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import Card from '../components/Card.astro';
+import hero from '../data/hero.json';
 import { getCollection } from 'astro:content';
 
 const featured = new Map([
@@ -11,19 +11,71 @@ const featured = new Map([
 const archive = (await getCollection('beitraege')).filter(post => featured.has(post.data.url));
 ---
 <Layout title="Turniere und Meisterschaften">
-  <div class="page-head"><div class="wrap">
-    <p class="eyebrow">Wettbewerbe im Verein</p>
-    <h1 class="page-title">Turniere & Meisterschaften</h1>
-    <p>Einzel, Doppel und Mixed: Hier findest du die Vereinsbewerbe und ihre Ergebnisse.</p>
-    <a class="text-link" href="/veranstaltungen/">Zum Veranstaltungskalender ↗</a>
-  </div></div>
-  <section class="section wrap" aria-labelledby="turnierarchiv">
+  <section class="wrap tournament-cover" aria-labelledby="tournament-title">
+    <div class="tournament-intro">
+      <p class="eyebrow">TV Mönichwald</p>
+      <h1 id="tournament-title">Turniere &amp;<br />Meisterschaften</h1>
+      <p>Einzel, Doppel und Mixed im Tennisverein Mönichwald.</p>
+      <div class="tournament-actions">
+        <a class="button" href="/buchung-demo/#tournament-panel">Turnierverwaltung ausprobieren ↗</a>
+        <a href="/veranstaltungen/">Veranstaltungskalender ↗</a>
+      </div>
+    </div>
+    <figure>
+      <img src={hero.src} alt="Luftaufnahme der Tennisanlage Mönichwald" width={hero.width} height={hero.height} fetchpriority="high" />
+      <figcaption>Tennisanlage Mönichwald</figcaption>
+    </figure>
+  </section>
+  <section class="wrap section" aria-labelledby="turnierarchiv">
     <div class="section-heading">
-      <div><p class="eyebrow">Aus dem Vereinsarchiv</p><h2 id="turnierarchiv">Vergangene Bewerbe</h2></div>
+      <h2 id="turnierarchiv">Vergangene Bewerbe</h2>
       <a class="text-link" href="/ergebnisse/">Alle Ergebnisse ↗</a>
     </div>
-    <div class="cards">
-      {archive.map(({data}) => <Card {...data} label={featured.get(data.url) + ' · ' + data.year} />)}
+    <div class="cards tournament-archive">
+      {archive.map(({data}) => (
+        <a href={data.url} class="archive-item">
+          {data.image && <img src={data.image.replace('-1600.webp', '-640.webp')} alt="" loading="lazy" width="640" height="410" />}
+          <div>
+            <p class="eyebrow">{featured.get(data.url)} · {data.year}</p>
+            <h3>{data.title}</h3>
+            <span>Zum Bericht ↗</span>
+          </div>
+        </a>
+      ))}
     </div>
   </section>
 </Layout>
+
+<style>
+  .tournament-cover {
+    display: grid;
+    grid-template-columns: 1fr 1.12fr;
+    padding-block: clamp(1.5rem, 4vw, 3.5rem) 0;
+  }
+  .tournament-intro {
+    background: #193b30;
+    color: #fff;
+    border-radius: 24px 0 0 24px;
+    padding: clamp(1.5rem, 4.7vw, 4rem);
+  }
+  .tournament-intro .eyebrow { color: #f5c2a6; }
+  h1 { font-family: Georgia, serif; font-size: clamp(2.35rem, 4.8vw, 5rem); line-height: 1.02; letter-spacing: -.05em; margin: .65rem 0 1rem; }
+  .tournament-actions { margin-top: 1.75rem; display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; }
+  .tournament-actions a:not(.button) { color: #fff; text-underline-offset: .25em; }
+  figure { margin: 0; position: relative; min-height: 290px; }
+  figure img { position: absolute; width: 100%; height: 100%; object-fit: cover; border-radius: 0 24px 24px 0; }
+  figcaption { position: absolute; bottom: 1rem; right: 1rem; background: #193b30; color: #fff; padding: .45rem .8rem; border-radius: 6px; font-size: .82rem; }
+  .archive-item { border: 1px solid #d5ded3; background: #fff; border-radius: 16px; overflow: hidden; text-decoration: none; }
+  .archive-item:hover { border-color: #193b30; }
+  .archive-item:focus-visible { outline: 3px solid #a54d31; outline-offset: 4px; }
+  .archive-item img { width: 100%; height: auto; aspect-ratio: 16 / 10; object-fit: cover; }
+  .archive-item > div { padding: 1.2rem; }
+  .archive-item h3 { margin-block: .4rem .8rem; font-size: 1.35rem; }
+  .archive-item span { text-decoration: underline; text-underline-offset: .24em; }
+  @media (max-width: 760px) {
+    .tournament-cover { grid-template-columns: 1fr; }
+    .tournament-intro { border-radius: 20px 20px 0 0; }
+    figure { min-height: 230px; }
+    figure img { border-radius: 0 0 20px 20px; }
+  }
+</style>
