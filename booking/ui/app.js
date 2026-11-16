@@ -1,5 +1,6 @@
+import { setupContentDemo } from './content.js';
 const $=id=>document.getElementById(id);
-const errors={FORBIDDEN:'Dafür fehlt die Berechtigung.',SLOT_TAKEN:'Diese Zeit wurde inzwischen belegt. Bitte wähle eine andere.',
+const errors={INVALID_CONTENT:'Bitte prüfe die Eingaben oder die Bildgröße.',FORBIDDEN:'Dafür fehlt die Berechtigung.',SLOT_TAKEN:'Diese Zeit wurde inzwischen belegt. Bitte wähle eine andere.',
   CANCELLATION_CLOSED:'Die Stornierungsfrist ist abgelaufen oder Stornieren ist deaktiviert.',
   OUTSIDE_BOOKING_WINDOW:'Die Buchung muss in der Zukunft und innerhalb des Buchungszeitraums liegen.',
   INVALID_SLOT:'Bitte wähle eine gültige Zeit innerhalb der Öffnungszeiten und der maximalen Dauer.',
@@ -18,6 +19,7 @@ async function api(path,method='GET',body) {
   return data;
 }
 function notice(text,error=false) {$('message').textContent=text;$('message').classList.toggle('error',error);}
+const loadContent = setupContentDemo(api, notice);
 function node(tag,text,cls) {const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;}
 function tabs(admin) {
   $('calendar-view').hidden=admin;$('admin-view').hidden=!admin;
@@ -53,7 +55,7 @@ function render() {
 }
 async function refresh() {state=await api(`/api/state?day=${encodeURIComponent($('day').value)}`);render();}
 async function chooseIdentity() {
-  try{await api('/api/demo-session','POST',{choice:$('identity').value});await refresh();tabs(false);notice('');}
+  try{await api('/api/demo-session','POST',{choice:$('identity').value});await refresh();await loadContent(state.role);tabs(false);notice('');}
   catch(error){notice(error.message,true);}
 }
 function openDialog(court,slot,item) {
@@ -104,4 +106,6 @@ $('policy-form').addEventListener('submit',async event=>{
 const tomorrow=new Date(Date.now()+86400000);
 const dateParts=Object.fromEntries(new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Vienna',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(tomorrow).map(p=>[p.type,p.value]));
 $('day').value=`${dateParts.year}-${dateParts.month}-${dateParts.day}`;
+const initialClub=new URLSearchParams(location.search).get('standort');
+if(initialClub==='waldbach'||initialClub==='moenichwald') $('identity').value=initialClub+'-member';
 await chooseIdentity();
