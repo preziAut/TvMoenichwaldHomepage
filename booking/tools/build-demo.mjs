@@ -11,12 +11,14 @@ await build({entryPoints:[path.join(root,'src/browser-entry.ts')],outfile:path.j
 for(const file of ['pglite.wasm','pglite.data','btree_gist.tar.gz'])
   await copyFile(path.join(root,'node_modules/@electric-sql/pglite/dist',file),path.join(out,file));
 await copyFile(path.join(root,'ui/style.css'),path.join(out,'style.css'));
+const tournamentPanel = await readFile(path.join(root,'ui/tournaments.html'),'utf8');
 const html=(await readFile(path.join(root,'ui/index.html'),'utf8'))
   .replace('href="/style.css"','href="./style.css"').replace('src="/app.js"','src="./demo.js"')
   .replace('href="/"','href="/buchung-demo/"')
   .replace('Lokale Testversion · Erfundene Konten · Keine echten Reservierungen',
     'ONLINE-DEMO · Nur erfundene Daten in deinem Browser · Neustart beim Neuladen · Keine echten Reservierungen')
   .replace('dieser lokalen Demo','dieser isolierten Demo')
+  .replace('<!-- tournaments -->', () => tournamentPanel)
   .replace('<!-- club-content -->', `<section id="club-content" class="club-content" hidden>
   <h2>Termine und Bilder</h2>
   <form id="event-editor" hidden>
