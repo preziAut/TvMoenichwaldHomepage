@@ -15,7 +15,7 @@ const {
 
 const canonical = new URL(Astro.url.pathname, site.url);
 const container = 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8';
-const link = 'text-stone-700 hover:text-orange-800';
+const link = 'text-[#e4ebdf] hover:text-[#e2f28d]';
 ---
 
 <!doctype html>
@@ -30,14 +30,11 @@ const link = 'text-stone-700 hover:text-orange-800';
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    <meta name="theme-color" content="#f8fafc" />
+    <meta name="theme-color" content="#f7f5ed" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400..800&amp;display=swap" />
     {import.meta.env.PUBLIC_SITE_APPROVED !== 'true' && <meta name="robots" content="noindex,nofollow" />}
   </head>
-  <body class="flex min-h-screen flex-col bg-slate-50! font-['Plus_Jakarta_Sans',system-ui,sans-serif]! text-slate-900!">
+  <body class="flex min-h-screen flex-col bg-[#f7f5ed]! font-['Instrument_Sans',system-ui,sans-serif]! text-[#152b23]!">
     <a class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-3 focus:text-indigo-700" href="#inhalt">Zum Inhalt</a>
 
     <slot name="header"><Navbar /></slot>
@@ -47,11 +44,11 @@ const link = 'text-stone-700 hover:text-orange-800';
     </main>
 
     <slot name="footer">
-      <footer class="border-t border-slate-200 bg-stone-50! py-14! text-emerald-950!">
+      <footer class="border-t border-slate-200 bg-[#173a2e]! py-10! text-[#fffdf7]!">
         <div class:list={[container, 'grid grid-cols-2 gap-8 md:grid-cols-[1.5fr_1fr_1fr]']}>
           <div class="col-span-2 md:col-span-1">
-            <a class="text-lg font-extrabold text-emerald-950 hover:text-orange-800" href="/">TV Mönichwald</a>
-            <p class="mt-2 text-sm text-slate-600">Tennis in Mönichwald, Oststeiermark.</p>
+            <a class="text-lg font-bold text-white hover:text-[#e2f28d]" href="/">TV Mönichwald</a>
+            <p class="mt-2 text-sm text-[#e4ebdf]">Tennis in Mönichwald, Oststeiermark.</p>
           </div>
           <div class="grid content-start gap-3 text-sm">
             <h2 class="font-semibold">Am Platz</h2>
@@ -67,7 +64,7 @@ const link = 'text-stone-700 hover:text-orange-800';
             <a class={link} href="/wechsellandcup/">Wechsellandcup</a>
             <a class={link} href={site.facebook} rel="noopener noreferrer">Facebook ↗</a>
           </div>
-          <div class="col-span-full flex flex-wrap justify-between gap-4 border-t border-slate-200 pt-5 text-xs text-slate-600">
+          <div class="col-span-full flex flex-wrap justify-between gap-4 border-t border-white/25 pt-5 text-xs text-[#e4ebdf]">
             <span>© {new Date().getFullYear()} Tennisverein Mönichwald</span>
             <div class="flex flex-wrap gap-4">
               <a class={link} href="/impressum/">Impressum</a>

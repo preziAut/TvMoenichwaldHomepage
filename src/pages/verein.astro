@@ -1,0 +1,47 @@
+---
+import { getEntry } from 'astro:content';
+import { CalendarDays } from 'lucide-astro';
+import Layout from '../layouts/Layout.astro';
+import SectionContainer from '../components/ui/SectionContainer.astro';
+import history from '../data/club-history.json';
+
+const page = await getEntry('seiten', '35');
+---
+
+<Layout title="Vereinsgeschichte" description={page?.data.description}>
+  <SectionContainer aria-labelledby="vereinsgeschichte">
+    <div class="grid overflow-hidden rounded-2xl bg-[#173a2e] text-[#fffdf7] md:grid-cols-2">
+      <div class="px-6 py-12 sm:px-12">
+        <p class="text-xs font-bold tracking-[.15em] text-[#e2f28d] uppercase"><a href="/" class="hover:underline">Startseite</a> / Unser Verein</p>
+        <h1 id="vereinsgeschichte" class="mt-5 font-['Instrument_Serif',Georgia,serif] text-5xl leading-none font-normal sm:text-6xl">
+          Unser Verein.<br /><em class="text-[#e2f28d]">Unsere Geschichte.</em>
+        </h1>
+      </div>
+      <img class="h-full min-h-52 w-full object-cover" src="/design/tennisanlage.webp" alt="Luftaufnahme der Tennisanlage Mönichwald" width="1043" height="800" />
+    </div>
+    <div class="mt-10 grid gap-10 lg:grid-cols-[1.45fr_1fr]">
+      <section aria-labelledby="meilensteine">
+        <h2 id="meilensteine" class="mb-5 flex items-center gap-3 font-['Instrument_Serif',Georgia,serif] text-4xl font-normal"><CalendarDays size={23} aria-hidden="true" /> Meilensteine</h2>
+        <ol class="m-0 grid list-none gap-4 border-l border-[#d9dbd0] pl-4 sm:pl-6">
+          {history.events.map(({ year, text }) => (
+            <li class="relative rounded-xl border border-[#d9dbd0] bg-[#fffdf7] p-5">
+              <span aria-hidden="true" class="absolute top-6 -left-[1.32rem] size-2 rounded-full bg-[#173a2e] sm:-left-[1.82rem]"></span>
+              <h3 class="mb-2 font-['Instrument_Serif',Georgia,serif] text-3xl font-normal text-[#173a2e]">{year}</h3>
+              <p class="leading-relaxed text-[#4c5d52]">{text}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+      <section aria-labelledby="sektionsleiter">
+        <h2 id="sektionsleiter" class="mb-5 font-['Instrument_Serif',Georgia,serif] text-4xl font-normal">Sektionsleiter des TV-Mönichwald</h2>
+        <ul class="m-0 list-none divide-y divide-[#d9dbd0] rounded-xl border border-[#d9dbd0] bg-[#fffdf7] px-4 sm:px-6">
+          {history.leaders.map(({ name, period }) => (
+            <li class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3 text-sm">
+              <span class="font-semibold">{name}</span><span class="text-[#4c5d52]">{period}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+    </div>
+  </SectionContainer>
+</Layout>

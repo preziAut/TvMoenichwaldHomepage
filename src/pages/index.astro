@@ -1,99 +1,74 @@
 ---
-import { ArrowUpRight, CalendarDays } from 'lucide-astro';
-import Button from '../components/ui/Button.astro';
-import SectionContainer from '../components/ui/SectionContainer.astro';
-import HomeCallout from '../components/sections/HomeCallout.astro';
+import { ArrowUpRight } from 'lucide-astro';
+import { getCollection } from 'astro:content';
+import Layout from '../layouts/Layout.astro';
 import Hero from '../components/sections/Hero.astro';
-import Layout from '../layouts/Layout.astro';import Card from '../components/Card.astro';import {getCollection} from 'astro:content';import hero from '../data/hero.json';
-const posts=(await getCollection('beitraege')).filter(p=>p.data.image).sort((a,b)=>b.data.year.localeCompare(a.data.year)||(b.data.modified||b.data.date).localeCompare(a.data.modified||a.data.date)).slice(0,3);
-const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Vienna'}).format(new Date());
-const events=(await getCollection('termine')).filter(e=>e.data.end.slice(0,10)>=today).sort((a,b)=>a.data.start.localeCompare(b.data.start)).slice(0,3);
+import SectionContainer from '../components/ui/SectionContainer.astro';
+import Button from '../components/ui/Button.astro';
+
+const features = [
+  { id: '669', label: 'Turnier', title: 'Sektturnier 2024', image: 'sektturnier.webp' },
+  { id: '677', label: 'Nachwuchs', title: 'Kinder-Tenniscamp', image: 'kindercamp.webp' },
+  { id: '679', label: 'Meisterschaft', title: 'Herren-Doppel', image: 'doppelmeisterschaft.webp' },
+];
+const posts = await getCollection('beitraege');
+const today = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Europe/Vienna' }).format(new Date());
+const events = (await getCollection('termine'))
+  .filter(({ data }) => data.end.slice(0, 10) >= today)
+  .sort((a, b) => a.data.start.localeCompare(b.data.start)).slice(0, 3);
+const displayTitle = "font-['Instrument_Serif',Georgia,serif] text-5xl leading-none font-normal tracking-tight sm:text-6xl";
+const labelStyle = 'mb-3 text-xs font-bold tracking-[.15em] text-[#4c5d52] uppercase';
+const linkStyle = 'inline-flex min-h-11 items-center gap-2 text-sm font-bold underline underline-offset-4';
 ---
-<Layout title="Tennis. Gemeinschaft. Mönichwald.">
+
+<Layout title="Tennis in der Oststeiermark">
   <Hero />
-
-  <SectionContainer class="bg-white" aria-labelledby="home-events-title">
-    <div class="grid gap-8 rounded-3xl border border-stone-200 bg-stone-50 p-6 sm:p-10 lg:grid-cols-[1fr_1.15fr] lg:p-12">
+  <SectionContainer id="termine" class="scroll-mt-5" aria-labelledby="termintitel">
+    <div class="grid items-center gap-6 md:grid-cols-2">
+      <div><p class={labelStyle}>Vereinskalender</p><h2 class={displayTitle} id="termintitel">Nächste Termine</h2></div>
       <div>
-        <div class="flex flex-wrap items-center gap-3">
-          <CalendarDays size={24} class="text-orange-700" aria-hidden="true" />
-          <span class="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-900">Saison-Update</span>
-        </div>
-        <p class="mt-5 text-sm font-semibold text-orange-800">Dabei sein</p>
-        <h2 id="home-events-title" class="mt-2 text-3xl font-extrabold tracking-tight text-emerald-950 sm:text-5xl">Nächste Termine</h2>
-        <Button href="/veranstaltungen/" tone="clay" class="mt-6">Zum Veranstaltungskalender<ArrowUpRight size={16} aria-hidden="true" /></Button>
+        {events.length ? (
+          <ul class="mb-4 grid list-none gap-2 p-0">
+            {events.map(({data}) => <li><a class="flex items-baseline gap-3 rounded-lg border border-[#d9dbd0] px-3 py-2 hover:bg-[#eeeadf]" href={data.url}><time class="shrink-0 text-xs font-bold" datetime={data.start.slice(0,10)}>{data.start.slice(0,10).split('-').reverse().join('.')}</time><span>{data.title}</span></a></li>)}
+          </ul>
+        ) : <p class="mb-4 max-w-sm leading-relaxed text-[#4c5d52]">Neue Termine werden im Vereinskalender veröffentlicht. Dort findest du auch vergangene Veranstaltungen.</p>}
+        <Button href="/veranstaltungen/" variant="secondary" class="border-[#173a2e]! bg-transparent! text-[#173a2e]! hover:bg-[#173a2e]! hover:text-white!">Kalender öffnen <ArrowUpRight size={16} aria-hidden="true" /></Button>
       </div>
-      {events.length ? (
-        <ul class="m-0 grid list-none gap-2 p-0">
-          {events.map(({ data: event }) => (
-            <li>
-              <a href={event.url} class="flex items-center gap-3 rounded-xl border border-stone-200 bg-white p-4 no-underline hover:border-orange-400 hover:text-orange-800 motion-safe:transition-colors">
-                <time datetime={event.start.slice(0, 10)} class="shrink-0 text-xs font-bold text-orange-800">{event.start.slice(0, 10).split('-').reverse().join('.')}</time>
-                <h3 class="min-w-0 flex-1 text-sm font-bold">{event.title}</h3>
-                <ArrowUpRight size={16} class="shrink-0" aria-hidden="true" />
-              </a>
-            </li>
-          ))}
-          <li class="pt-2"><a class="font-semibold text-orange-800 underline underline-offset-4" href="/veranstaltungen/">Terminarchiv</a></li>
-        </ul>
-      ) : (
-        <div class="flex items-center rounded-2xl border border-stone-200 bg-white p-6 leading-relaxed text-stone-700 sm:p-8">
-          <p>Neue Termine werden hier bekanntgegeben. Vergangene Veranstaltungen findest du in unserem <a class="font-semibold text-orange-800 underline underline-offset-4 hover:text-orange-900" href="/veranstaltungen/">Terminarchiv</a>.</p>
-        </div>
-      )}
     </div>
   </SectionContainer>
 
-  <SectionContainer class="bg-stone-50">
-    <HomeCallout
-      label="Wettbewerbe im Verein"
-      title="Auf dem Platz entscheidet sich’s."
-      description="Einzel, Doppel und Mixed: Entdecke unsere Turniere und die Ergebnisse vergangener Bewerbe."
-      href="/turniere/"
-      linkText="Zu den Turnieren"
-      courtPattern
-    />
+  <SectionContainer id="aktuelles" class="scroll-mt-5 bg-[#eeeadf]" aria-labelledby="aktuelltitel">
+    <div class="mb-7 flex flex-wrap items-end justify-between gap-4">
+      <div><p class={labelStyle}>Aus dem Vereinsarchiv</p><h2 class={displayTitle} id="aktuelltitel">Unser Vereinsleben</h2></div>
+      <a href="/aktuelles/" class={linkStyle}>Alle Beiträge <ArrowUpRight size={16} aria-hidden="true" /></a>
+    </div>
+    <div class="grid gap-5 md:grid-cols-3">
+      {features.map((feature) => {
+        const post = posts.find(({data}) => data.legacyId === feature.id);
+        if (!post) return null;
+        return <article class="h-full">
+          <a href={post.data.url} class="group flex h-full flex-col overflow-hidden rounded-xl border border-[#d9dbd0] bg-[#fffdf7] no-underline hover:border-[#4c5d52] motion-safe:transition-colors">
+            <div class="aspect-[16/10] overflow-hidden"><img src={'/design/' + feature.image} alt="" width="640" height="410" loading="lazy" class="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105" /></div>
+            <div class="flex grow items-end justify-between gap-2 p-5">
+              <div><p class={labelStyle}>{feature.label} · {post.data.year}</p><h3 class="font-['Instrument_Serif',Georgia,serif] text-3xl leading-none font-normal">{feature.title}</h3></div>
+              <ArrowUpRight size={18} class="shrink-0" aria-hidden="true" />
+            </div>
+          </a>
+        </article>;
+      })}
+    </div>
   </SectionContainer>
 
-  <SectionContainer class="bg-white" aria-labelledby="home-stories-title">
-    <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
+  <SectionContainer id="verein" class="scroll-mt-5" aria-labelledby="vereinstitel">
+    <div class="grid gap-7 rounded-2xl bg-[#173a2e] px-6 py-10 text-[#fffdf7] sm:p-12 md:grid-cols-2 md:items-center">
       <div>
-        <p class="text-sm font-semibold text-orange-800">Aus unserem Vereinsleben</p>
-        <h2 id="home-stories-title" class="mt-2 text-3xl font-extrabold tracking-tight text-emerald-950 sm:text-5xl">Momente, die bleiben.</h2>
+        <p class="mb-3 text-xs font-bold tracking-[.15em] text-[#e2f28d] uppercase">Über den Verein</p>
+        <h2 class={displayTitle} id="vereinstitel">Auf dem Platz <em class="text-[#e2f28d]">seit 1978.</em></h2>
       </div>
-      <a class="inline-flex items-center gap-2 font-semibold text-orange-800 underline-offset-4 hover:underline" href="/aktuelles/">Alle Beiträge ansehen <ArrowUpRight size={16} aria-hidden="true" /></a>
-    </div>
-    <div class="grid grid-cols-1 gap-8 md:grid-cols-3">
-      {posts.map(({ data }) => <Card {...data} presentation="editorial" label={data.year === today.slice(0,4) ? 'Aktuell · ' + data.year : 'Aus dem Archiv · ' + data.year} />)}
-    </div>
-  </SectionContainer>
-
-  <SectionContainer class="bg-stone-50" aria-labelledby="home-club-title">
-    <div class="grid gap-4 lg:grid-cols-[1.1fr_1fr]">
-      <div class="overflow-hidden rounded-3xl bg-emerald-950 lg:row-span-2">
-        <img class="aspect-[16/10] h-full w-full object-cover" src={hero.src} alt="Tennisanlage Mönichwald" loading="lazy" width={hero.width} height={hero.height} />
+      <div>
+        <p class="mb-4 max-w-md leading-relaxed text-[#e4ebdf]">Aus dem ersten Tennisplatz in Mönichwald wurden zwei Sandplätze und ein Vereinshaus. Heute treffen wir uns hier zum Training, bei Turnieren und für eine Runde unter Freunden.</p>
+        <a href="/verein/" class={linkStyle}>Unsere Geschichte <ArrowUpRight size={16} aria-hidden="true" /></a>
       </div>
-      <div class="rounded-3xl border border-stone-200 bg-white p-6 sm:p-9">
-        <p class="text-sm font-semibold text-orange-800">Zuhause am Tennisplatz</p>
-        <h2 id="home-club-title" class="mt-3 text-3xl font-extrabold tracking-tight text-emerald-950 sm:text-5xl">Ein Sport.<br />Viele Verbindungen.</h2>
-        <p class="mt-4 leading-relaxed text-stone-700">Seit 1978 gehört Tennis zu Mönichwald. Aus dem ersten Platz wurden zwei Sandplätze, ein Vereinshaus und viele gemeinsame Geschichten. Ob Training, Turnier oder eine Runde unter Freunden – hier kommen wir zusammen.</p>
-        <a class="mt-5 inline-flex items-center gap-2 font-semibold text-orange-800 underline-offset-4 hover:underline" href="/verein/">Unsere Geschichte kennenlernen <ArrowUpRight size={16} class="shrink-0" aria-hidden="true" /></a>
-      </div>
-      <dl class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <div class="rounded-2xl bg-emerald-950 p-4 text-white"><dt class="text-xs leading-snug">Beginn unserer Geschichte</dt><dd class="mt-2 text-3xl font-extrabold tracking-tight">1978</dd></div>
-        <div class="rounded-2xl border border-stone-200 bg-white p-4 text-emerald-950"><dt class="text-xs leading-snug">Sandplätze in Mönichwald</dt><dd class="mt-2 text-3xl font-extrabold tracking-tight">2</dd></div>
-        <div class="col-span-2 rounded-2xl bg-orange-100 p-4 text-orange-950 sm:col-span-1"><dt class="text-xs leading-snug">Plätze gesamt</dt><dd class="mt-2 text-3xl font-extrabold tracking-tight">4</dd></div>
-      </dl>
     </div>
-  </SectionContainer>
-
-  <SectionContainer class="bg-white">
-    <HomeCallout
-      label="Lust auf Tennis?"
-      title="Dein nächstes Match wartet."
-      description="Reserviere in Mönichwald oder Waldbach."
-      href="/reservierung/"
-      linkText="Zur Platzreservierung"
-    />
   </SectionContainer>
 </Layout>

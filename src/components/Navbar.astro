@@ -4,16 +4,16 @@ import { navigation, site } from '../config';
 import Button from './ui/Button.astro';
 
 const path = Astro.url.pathname;
-const activeClass = 'bg-indigo-50 font-semibold text-indigo-700!';
+const activeClass = 'bg-[#eeeadf] font-semibold text-[#173a2e]!';
 const inactiveClass = 'text-slate-600! hover:bg-slate-50';
-const linkClass = 'rounded-lg px-3 py-2.5 text-sm font-medium hover:text-indigo-700! focus-visible:outline-2 focus-visible:outline-indigo-600';
+const linkClass = 'rounded-lg px-3 py-2.5 text-sm font-medium hover:text-emerald-900! focus-visible:outline-2 focus-visible:outline-emerald-800';
 ---
 
-<header class="border-b border-slate-200! bg-white!">
+<header class="border-b border-slate-200! bg-[#f7f5ed]!">
   <div class="relative mx-auto grid min-h-20 max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 sm:px-6 lg:grid-cols-[1fr_auto_1fr] lg:px-8">
     <a href="/" class="flex min-w-0 items-center gap-2.5 justify-self-start font-bold tracking-tight text-slate-900 no-underline" aria-label={site.shortName + ' – Startseite'}>
-      <img class="size-10 shrink-0 rounded-full object-cover" src="/media/cc04f5358a4d3f-640.webp" alt="" width="40" height="40" />
-      <span>{site.shortName}</span>
+      <img class="size-10 shrink-0 rounded-full object-cover" src="/design/vereinslogo.webp" alt="" width="40" height="40" />
+      <span>{site.shortName}<small class="mt-0.5 block text-xs font-medium text-[#4c5d52]">Tennisverein seit 1978</small></span>
     </a>
 
     <nav aria-label="Hauptnavigation" class="hidden! gap-1! lg:flex!">
@@ -22,21 +22,21 @@ const linkClass = 'rounded-lg px-3 py-2.5 text-sm font-medium hover:text-indigo-
       ))}
     </nav>
 
-    <Button href="/reservierung/" class="hidden! justify-self-end lg:inline-flex!" aria-current={path === '/reservierung/' ? 'page' : undefined}>
+    <Button href="/reservierung/" class="hidden! justify-self-end bg-[#173a2e]! text-white! hover:bg-emerald-800! lg:inline-flex!" aria-current={path === '/reservierung/' ? 'page' : undefined}>
       Platz reservieren <ArrowUpRight size={16} aria-hidden="true" />
     </Button>
 
     <details data-mobile-navigation class="group justify-self-end lg:hidden">
-      <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-indigo-600 [&::-webkit-details-marker]:hidden">
+      <summary class="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg border border-slate-200 px-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-emerald-800 [&::-webkit-details-marker]:hidden">
         <Menu size={20} class="group-open:hidden" aria-hidden="true" />
         <X size={20} class="hidden group-open:block" aria-hidden="true" />
         Menü
       </summary>
-      <nav aria-label="Hauptnavigation" class="absolute! inset-x-4! top-full! z-30 grid! max-h-[calc(100dvh-5rem)] gap-1! overflow-y-auto rounded-b-2xl border border-slate-200 bg-white! p-3! shadow-none! sm:inset-x-6!">
+      <nav aria-label="Hauptnavigation" class="absolute! inset-x-4! top-full! z-30 grid! max-h-[calc(100dvh-5rem)] gap-1! overflow-y-auto rounded-b-2xl border border-slate-200 bg-[#f7f5ed]! p-3! shadow-none! sm:inset-x-6!">
         {navigation.map(([label, href]) => (
           <a href={href} class:list={[linkClass, 'min-h-11', path === href ? activeClass : inactiveClass]} aria-current={path === href ? 'page' : undefined}>{label}</a>
         ))}
-        <Button href="/reservierung/" class="mt-2 hover:text-white!" aria-current={path === '/reservierung/' ? 'page' : undefined}>
+        <Button href="/reservierung/" class="mt-2 bg-[#173a2e]! text-white! hover:bg-emerald-800!" aria-current={path === '/reservierung/' ? 'page' : undefined}>
           Platz reservieren <ArrowUpRight size={16} aria-hidden="true" />
         </Button>
       </nav>

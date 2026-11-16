@@ -1,6 +1,6 @@
 ---
 import Layout from '../layouts/Layout.astro';import ContactForm from '../components/ContactForm.astro';import {getCollection,render} from 'astro:content';import {site} from '../config';
-export async function getStaticPaths(){const entries=[...await getCollection('seiten'),...await getCollection('beitraege'),...await getCollection('ergebnisse')];return entries.filter(e=>!['/','/bilder/','/veranstaltungen/'].includes(e.data.url)).map(entry=>({params:{slug:entry.data.url.slice(1,-1)},props:{entry}}));}
+export async function getStaticPaths(){const entries=[...await getCollection('seiten'),...await getCollection('beitraege'),...await getCollection('ergebnisse')];return entries.filter(e=>!['/','/verein/','/bilder/','/veranstaltungen/'].includes(e.data.url)).map(entry=>({params:{slug:entry.data.url.slice(1,-1)},props:{entry}}));}
 const {entry}=Astro.props;const {Content}=await render(entry);const d=entry.data;
 ---
 <Layout title={d.title} description={d.description}><div class="page-head"><div class="wrap"><p class="eyebrow"><a href="/">Startseite</a> / {entry.collection==='seiten'?'Unser Verein':'Vereinsarchiv'}</p><h1 class="page-title">{d.title==='Vereinsgeschichte'?'Unser Verein. Unsere Geschichte.':d.title}</h1>{entry.collection!=='seiten'&&<p>Archivbeitrag · {d.year} · Ursprünglich veröffentlicht am {d.date.split('-').reverse().join('.')}</p>}</div></div><div class="wrap"><div class="content">

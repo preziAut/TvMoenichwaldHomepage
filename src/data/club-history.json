@@ -1,0 +1,70 @@
+{
+  "events": [
+    {
+      "year": "1978",
+      "text": "Unter Obmann Bruno Maierhofer wird mit dem Bau des ersten Tennisplatzes in Mönichwald begonnen. Im März 1978 wird der erste Sektionsleiter gewählt."
+    },
+    {
+      "year": "1979",
+      "text": "77 aktive Mitglieder treten bei der Gründerversammlung der Sektion Tennis bei."
+    },
+    {
+      "year": "1980",
+      "text": "Errichtung einer Flutlichtanlage beim Tennisplatz."
+    },
+    {
+      "year": "1987",
+      "text": "Es fällt der Beschluss zum Bau eines zweiten Tennisplatzes. Dieser wird 1988 fertiggestellt."
+    },
+    {
+      "year": "2006",
+      "text": "Errichtung des Vereinshauses unter Sportvereinsobmann Johann Winkler"
+    }
+  ],
+  "leaders": [
+    {
+      "name": "Karl Schrammel",
+      "period": "1978"
+    },
+    {
+      "name": "Johann Hold",
+      "period": "1979 - 1983"
+    },
+    {
+      "name": "Alfred Lechner",
+      "period": "1984 - 1986"
+    },
+    {
+      "name": "Hermann Schwarz",
+      "period": "1987 - 1988"
+    },
+    {
+      "name": "Konrad Kogler",
+      "period": "1988 - 1992"
+    },
+    {
+      "name": "Hans Peter Ganster",
+      "period": "1993 - 1994"
+    },
+    {
+      "name": "Monika Hutter",
+      "period": "1995 - 1996"
+    },
+    {
+      "name": "Konrad Kogler",
+      "period": "1997 - 2007"
+    },
+    {
+      "name": "Christian Ertl",
+      "period": "2008 - 2011"
+    },
+    {
+      "name": "Birgit Wiedner",
+      "period": "2012 - 2016"
+    },
+    {
+      "name": "Johann Gruber",
+      "period": "seit 2017"
+    }
+  ]
+}
