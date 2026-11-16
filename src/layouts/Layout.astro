@@ -15,7 +15,7 @@ const {
 
 const canonical = new URL(Astro.url.pathname, site.url);
 const container = 'max-w-6xl mx-auto px-4 sm:px-6 lg:px-8';
-const link = 'text-slate-600 hover:text-indigo-700';
+const link = 'text-stone-700 hover:text-orange-800';
 ---
 
 <!doctype html>
@@ -47,10 +47,10 @@ const link = 'text-slate-600 hover:text-indigo-700';
     </main>
 
     <slot name="footer">
-      <footer class="border-t border-slate-200 bg-white! py-10! text-slate-900!">
-        <div class:list={[container, 'grid grid-cols-2 gap-8 md:grid-cols-4']}>
-          <div class="col-span-2">
-            <a class="text-lg font-bold text-slate-900 hover:text-indigo-700" href="/">TV Mönichwald</a>
+      <footer class="border-t border-slate-200 bg-stone-50! py-14! text-emerald-950!">
+        <div class:list={[container, 'grid grid-cols-2 gap-8 md:grid-cols-[1.5fr_1fr_1fr]']}>
+          <div class="col-span-2 md:col-span-1">
+            <a class="text-lg font-extrabold text-emerald-950 hover:text-orange-800" href="/">TV Mönichwald</a>
             <p class="mt-2 text-sm text-slate-600">Tennis in Mönichwald, Oststeiermark.</p>
           </div>
           <div class="grid content-start gap-3 text-sm">

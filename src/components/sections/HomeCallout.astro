@@ -1,0 +1,30 @@
+---
+import { ArrowUpRight } from 'lucide-astro';
+import Button from '../ui/Button.astro';
+
+interface Props {
+  label: string;
+  title: string;
+  description: string;
+  href: string;
+  linkText: string;
+  courtPattern?: boolean;
+}
+const { label, title, description, href, linkText, courtPattern = false } = Astro.props;
+---
+
+<div class="relative isolate overflow-hidden rounded-3xl bg-emerald-950 px-6 py-12 text-white sm:px-10 lg:px-14 lg:py-16">
+  {courtPattern && <div aria-hidden="true" class="pointer-events-none absolute inset-y-5 -right-16 -z-10 hidden w-80 rotate-12 rounded-sm border border-white/15 md:block">
+    <div class="absolute inset-x-6 inset-y-0 border-x border-white/15"></div>
+    <div class="absolute inset-x-0 top-1/2 border-t border-white/15"></div>
+    <div class="absolute inset-x-6 inset-y-1/4 border-y border-white/15"></div>
+  </div>}
+  <div class="flex flex-col items-start gap-7 lg:flex-row lg:items-center lg:justify-between">
+    <div class="max-w-2xl">
+      <p class="text-sm font-semibold text-orange-300">{label}</p>
+      <h2 class="mt-3 text-3xl font-extrabold tracking-tight text-white sm:text-5xl">{title}</h2>
+      <p class="mt-4 leading-relaxed text-stone-200">{description}</p>
+    </div>
+    <Button href={href} tone="clay" class="shrink-0">{linkText}<ArrowUpRight size={16} aria-hidden="true" /></Button>
+  </div>
+</div>

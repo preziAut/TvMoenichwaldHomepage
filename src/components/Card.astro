@@ -1,5 +1,20 @@
 ---
-interface Props{title:string;url:string;image?:string;description?:string;label?:string;}
-const{title,url,image,description,label}=Astro.props;
+import { ArrowUpRight } from 'lucide-astro';
+interface Props{title:string;url:string;image?:string;description?:string;label?:string;presentation?:'default' | 'editorial';}
+const{title,url,image,description,label,presentation='default'}=Astro.props;
 ---
+{presentation === 'editorial' ? (
+  <a class="group flex min-w-0 flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white no-underline hover:border-orange-300 focus-visible:outline-2 focus-visible:outline-orange-700 motion-safe:transition-colors" href={url}>
+    <div class="relative aspect-[16/10] overflow-hidden bg-stone-100">
+      {image && <img src={image.replace('-1600.webp','-640.webp')} alt="" loading="lazy" width="640" height="410" class="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105" />}
+      <span class="absolute top-3 left-3 rounded-full bg-white px-3 py-1 text-xs font-bold text-emerald-950">{label || 'Vereinsleben'}</span>
+    </div>
+    <div class="flex grow flex-col p-5">
+      <h3 class="text-xl font-extrabold tracking-tight text-emerald-950">{title}</h3>
+      {description && <p class="mt-2 text-sm leading-relaxed text-stone-700">{description}</p>}
+      <span class="mt-auto inline-flex items-center gap-2 pt-5 text-sm font-semibold text-orange-800">Mehr erfahren <ArrowUpRight size={16} aria-hidden="true" /></span>
+    </div>
+  </a>
+) : (
 <a class="card" href={url}>{image&&<img src={image.replace('-1600.webp','-640.webp')} alt="" loading="lazy" width="640" height="410"/>}<div class="card-body"><small>{label||'Vereinsleben'}</small><h3>{title}</h3>{description&&<p>{description}</p>}<span class="arrow">Mehr erfahren ↗</span></div></a>
+)}

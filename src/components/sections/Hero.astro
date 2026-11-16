@@ -1,41 +1,56 @@
 ---
-import { ArrowUpRight, CalendarDays, MapPin } from 'lucide-astro';
+import { ArrowRight, ArrowUpRight, CalendarDays, MapPin } from 'lucide-astro';
 import Button from '../ui/Button.astro';
 import SectionContainer from '../ui/SectionContainer.astro';
 import hero from '../../data/hero.json';
+
+const quickLinks = [
+  { number: '01', text: 'Zwei Standorte. Vier Plätze.', href: '/reservierung/' },
+  { number: '02', text: 'Meisterschaften & Turniere', href: '/turniere/' },
+  { number: '03', text: 'Zum Veranstaltungskalender', href: '/veranstaltungen/' },
+];
 ---
 
-<SectionContainer aria-labelledby="home-hero-title" class="border-b border-slate-200 bg-slate-50">
-  <div class="grid items-center gap-8 md:grid-cols-2 lg:gap-16">
+<SectionContainer aria-labelledby="home-hero-title" class="bg-stone-50 py-5! sm:py-8! lg:py-12!">
+  <div class="grid items-center gap-8 rounded-3xl bg-emerald-950 px-5 pt-10 pb-14 text-white sm:px-10 sm:pt-16 md:grid-cols-2 lg:gap-10 lg:p-14 lg:pb-20">
     <div class="min-w-0">
-      <p class="text-sm font-semibold text-indigo-600">Tennisverein Mönichwald</p>
-      <h1 id="home-hero-title" class="mt-4 text-4xl leading-tight font-extrabold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-        Tennis in der <span class="text-indigo-600">Oststeiermark.</span>
+      <p class="text-sm font-semibold text-orange-300">Tennisverein Mönichwald</p>
+      <h1 id="home-hero-title" class="mt-4 text-[clamp(2rem,7vw,3.9rem)] leading-[1.06] font-extrabold tracking-tight text-white">
+        Tennis in der <span class="text-orange-300">Oststeiermark.</span>
       </h1>
-      <p class="mt-5 max-w-md text-base leading-relaxed text-slate-600 sm:text-lg">
+      <p class="mt-5 max-w-md text-base leading-relaxed text-stone-200 sm:text-lg">
         Spiele in Mönichwald oder Waldbach und entdecke Trainings, Turniere und Vereinsveranstaltungen.
       </p>
       <div class="mt-7 flex flex-wrap gap-3">
-        <Button href="/reservierung/">Platz buchen <ArrowUpRight size={16} aria-hidden="true" /></Button>
+        <Button href="/reservierung/" tone="clay">Platz buchen <ArrowUpRight size={16} aria-hidden="true" /></Button>
         <Button href="/veranstaltungen/" variant="secondary"><CalendarDays size={16} aria-hidden="true" /> Nächste Termine</Button>
       </div>
     </div>
 
-    <figure class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
+    <figure class="min-w-0 overflow-hidden rounded-2xl border border-white/20 bg-emerald-900 p-1.5">
       <img
-        class="aspect-[4/3] w-full object-cover sm:aspect-[16/10]"
+        class="aspect-[4/3] w-full rounded-xl object-cover sm:aspect-[16/10] md:aspect-[5/4]"
         src={hero.src}
         srcset={hero.thumb + ' 640w, ' + hero.src + ' ' + hero.width + 'w'}
-        sizes="(min-width: 768px) 50vw, 100vw"
+        sizes="(min-width: 1152px) 480px, (min-width: 768px) 44vw, 100vw"
         alt="Die beiden Sandplätze und das Vereinshaus in Mönichwald aus der Luft"
         width={hero.width}
         height={hero.height}
         fetchpriority="high"
       />
-      <figcaption class="flex items-center gap-2 px-4 py-4 text-sm text-slate-600 sm:px-5">
-        <MapPin size={17} class="shrink-0 text-indigo-600" aria-hidden="true" />
+      <figcaption class="flex items-center gap-2 px-3 py-3 text-sm text-stone-100">
+        <MapPin size={17} class="shrink-0 text-orange-300" aria-hidden="true" />
         Tennisanlage Mönichwald
       </figcaption>
     </figure>
+  </div>
+  <div class="relative -mt-5 grid gap-3 px-3 md:grid-cols-3 lg:-mt-8 lg:px-8">
+    {quickLinks.map(({ number, text, href }) => (
+      <a href={href} class="group flex min-w-0 items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3 text-sm font-bold text-emerald-950 no-underline hover:border-orange-300 focus-visible:outline-2 focus-visible:outline-orange-700 motion-safe:transition-all motion-safe:hover:-translate-y-1 sm:p-4">
+        <span class="rounded-lg bg-orange-50 px-2 py-1 font-extrabold text-orange-800">{number}</span>
+        <span>{text}</span>
+        <ArrowRight size={17} class="ml-auto shrink-0 text-orange-700" aria-hidden="true" />
+      </a>
+    ))}
   </div>
 </SectionContainer>
