@@ -48,7 +48,7 @@ const linkStyle = 'inline-flex min-h-11 items-center gap-2 text-sm font-bold und
         if (!post) return null;
         return <article class="h-full">
           <a href={post.data.url} class="group flex h-full flex-col overflow-hidden rounded-xl border border-[#d9dbd0] bg-[#fffdf7] no-underline hover:border-[#4c5d52] motion-safe:transition-colors">
-            <div class="aspect-[16/10] overflow-hidden"><img src={'/design/' + feature.image} alt="" width="640" height="410" loading="lazy" class="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105" /></div>
+            <div class="aspect-[10/3] overflow-hidden"><img src={'/design/' + feature.image} alt="" width="640" height="192" loading="lazy" class="h-full w-full object-cover motion-safe:transition-transform motion-safe:duration-500 motion-safe:group-hover:scale-105" /></div>
             <div class="flex grow items-end justify-between gap-2 p-5">
               <div><p class={labelStyle}>{feature.label} · {post.data.year}</p><h3 class="font-['Instrument_Serif',Georgia,serif] text-3xl leading-none font-normal">{feature.title}</h3></div>
               <ArrowUpRight size={18} class="shrink-0" aria-hidden="true" />
