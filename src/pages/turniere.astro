@@ -1,0 +1,29 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Card from '../components/Card.astro';
+import { getCollection } from 'astro:content';
+
+const featured = new Map([
+  ['/beitraege/einzelmeisterschaft-2024-764/', 'Einzelmeisterschaft'],
+  ['/beitraege/mixed-doppelmeisterschaft-2024-702/', 'Mixed-Doppel'],
+  ['/beitraege/herren-doppelmeisterschaft-2024-679/', 'Herren-Doppel'],
+]);
+const archive = (await getCollection('beitraege')).filter(post => featured.has(post.data.url));
+---
+<Layout title="Turniere und Meisterschaften">
+  <div class="page-head"><div class="wrap">
+    <p class="eyebrow">Wettbewerbe im Verein</p>
+    <h1 class="page-title">Turniere & Meisterschaften</h1>
+    <p>Einzel, Doppel und Mixed: Hier findest du die Vereinsbewerbe und ihre Ergebnisse.</p>
+    <a class="text-link" href="/veranstaltungen/">Zum Veranstaltungskalender ↗</a>
+  </div></div>
+  <section class="section wrap" aria-labelledby="turnierarchiv">
+    <div class="section-heading">
+      <div><p class="eyebrow">Aus dem Vereinsarchiv</p><h2 id="turnierarchiv">Vergangene Bewerbe</h2></div>
+      <a class="text-link" href="/ergebnisse/">Alle Ergebnisse ↗</a>
+    </div>
+    <div class="cards">
+      {archive.map(({data}) => <Card {...data} label={featured.get(data.url) + ' · ' + data.year} />)}
+    </div>
+  </section>
+</Layout>

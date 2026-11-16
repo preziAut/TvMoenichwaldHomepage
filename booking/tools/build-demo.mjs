@@ -16,7 +16,28 @@ const html=(await readFile(path.join(root,'ui/index.html'),'utf8'))
   .replace('href="/"','href="/buchung-demo/"')
   .replace('Lokale Testversion · Erfundene Konten · Keine echten Reservierungen',
     'ONLINE-DEMO · Nur erfundene Daten in deinem Browser · Neustart beim Neuladen · Keine echten Reservierungen')
-  .replace('dieser lokalen Demo','dieser isolierten Demo');
+  .replace('dieser lokalen Demo','dieser isolierten Demo')
+  .replace('<!-- club-content -->', `<section id="club-content" class="club-content" hidden>
+  <h2>Termine und Bilder</h2>
+  <form id="event-editor" hidden>
+    <h3 id="event-form-title">Termin anlegen</h3>
+    <label for="event-title">Titel</label><input id="event-title" required maxlength="120">
+    <label for="event-date">Datum</label><input id="event-date" type="date" required>
+    <label for="event-description">Beschreibung</label><textarea id="event-description" maxlength="2000"></textarea>
+    <label><input id="event-public" type="checkbox"> Im Demokalender anzeigen</label>
+    <button class="primary">Termin speichern</button>
+    <button id="event-reset" type="button">Neuer Termin</button>
+  </form>
+  <h3>Veranstaltungskalender</h3>
+  <ul id="club-events"></ul>
+  <form id="photo-editor" hidden>
+    <h3>Bild hinzufügen</h3>
+    <label for="photo-file">JPEG, PNG oder WebP bis 8 MB</label><input id="photo-file" type="file" accept="image/jpeg,image/png,image/webp" required>
+    <label for="photo-caption">Bildbeschreibung</label><input id="photo-caption" required maxlength="180">
+    <button class="primary">Bild hinzufügen</button>
+  </form>
+  <h3>Galerie</h3><ul id="club-photos" class="club-photos"></ul>
+  </section>`);
 await writeFile(path.join(out,'index.html'),html);
 for(const file of await readdir(out)) if((await stat(path.join(out,file))).size>25*1024*1024)
   throw new Error('Cloudflare asset exceeds 25 MiB: '+file);
