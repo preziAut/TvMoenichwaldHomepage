@@ -20,6 +20,7 @@
     "@astrojs/sitemap": "latest",
     "@tailwindcss/vite": "latest",
     "astro": "7.4.12",
+    "lucide-astro": "^0.556.0",
     "tailwindcss": "latest"
   },
   "devDependencies": {
