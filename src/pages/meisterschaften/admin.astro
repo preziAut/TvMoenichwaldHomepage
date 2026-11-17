@@ -9,6 +9,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     <p id="admin-status" role="status" class="my-4 text-sm"></p>
     <p class="my-4"><a class="text-sm font-semibold underline" href="/meisterschaften/anmelden/">Zum Vereinslogin</a></p>
     <label id="existing-label" hidden>Vorhandene Meisterschaft öffnen<select id="existing" class="mt-2 block w-full max-w-lg rounded-lg border border-[#9fa995] p-3"><option value="">Bitte auswählen</option></select></label>
+    <button id="new-draft" type="button" hidden class="mb-4 min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Neue Meisterschaft</button>
     <div class="grid gap-5 lg:grid-cols-2">
       <form id="create" class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 class="mb-4 text-xl font-bold">Neue Meisterschaft</h2>
@@ -21,6 +22,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       <div id="setup" hidden class="space-y-4 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 id="draft-title" class="text-xl font-bold"></h2>
         <form id="player">
+          <h3 class="mb-3 font-semibold">Teilnehmer hinzufügen</h3>
           <label>Vorname<input name="firstName" required maxlength="70" /></label>
           <label>Nachname<input name="lastName" required maxlength="70" /></label>
           <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Teilnehmer hinzufügen</button>
@@ -54,6 +56,11 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
           <button name="action" value="finish" class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Meisterschaft abschließen</button>
         </div>
       </form>
+      <section id="result-panel" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6 lg:col-span-2" aria-labelledby="results-title">
+        <h2 id="results-title" tabindex="-1" class="mb-4 text-xl font-bold">Begegnungen und Ergebnisse</h2>
+        <a id="public-detail" class="mb-4 inline-block font-semibold underline underline-offset-4" href="/meisterschaften/">Spielplan und Tabelle ansehen</a>
+        <div id="result-list" class="grid gap-3 sm:grid-cols-2"></div>
+      </section>
       <form id="invite" class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 class="mb-4 text-xl font-bold">Vereinszugang einladen</h2>
         <label>E-Mail-Adresse<input name="email" type="email" required maxlength="254" /></label>
@@ -75,6 +82,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
 </Layout>
 
 <script>
+  import { resultCard, type AdminMatch } from '../../scripts/meisterschaft-results.ts';
   const status = document.querySelector<HTMLElement>('#admin-status')!;
   const setup = document.querySelector<HTMLElement>('#setup')!;
   const preview = document.querySelector<HTMLOListElement>('#preview')!;
@@ -84,6 +92,10 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   const seedRows = document.querySelector('#seed-rows')!;
   const manualToggle = document.querySelector<HTMLInputElement>('#manual-toggle')!;
   const manualGroups = document.querySelector<HTMLElement>('#manual-groups')!;
+  const createForm = document.querySelector<HTMLFormElement>('#create')!;
+  const newDraft = document.querySelector<HTMLButtonElement>('#new-draft')!;
+  const resultPanel = document.querySelector<HTMLElement>('#result-panel')!;
+  const results = document.querySelector<HTMLElement>('#result-list')!;
   type Summary = { id: string; title: string; version: number; status: string };
   type Entry = { id: string; display_name: string; seed: number | null };
   let entries: Entry[] = [];
@@ -117,15 +129,43 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     suggested = null;
     preview.replaceChildren();
     setup.hidden = item.status !== 'draft';
+    createForm.hidden = true;
+    newDraft.hidden = false;
     phaseForm.hidden = !['groups_active', 'phase_active'].includes(item.status);
+    for (const button of phaseForm.querySelectorAll<HTMLButtonElement>('button[name="action"]')) {
+      button.hidden = item.status === 'phase_active' ? button.value !== 'finish' : button.value === 'finish';
+    }
+    document.querySelector('#phase-preview')!.textContent = '';
+    resultPanel.hidden = item.status === 'draft';
+    results.replaceChildren();
+    history.replaceState(null, '', `?id=${encodeURIComponent(item.id)}`);
     document.querySelector('#draft-title')!.textContent = item.title;
     if (item.status === 'draft') {
       const response = await fetch(`/api/meisterschaften/${encodeURIComponent(item.id)}/teilnehmer`);
       if (!response.ok) throw new Error('Teilnehmer konnten nicht geladen werden.');
       entries = await response.json();
       renderSeeds();
-    }
+    } else await loadResults(item.id);
   }
+
+  async function loadResults(id: string) {
+    const response = await fetch(`/api/meisterschaften/${encodeURIComponent(id)}`);
+    if (!response.ok) throw new Error('Begegnungen konnten nicht geladen werden.');
+    const { matches }: { matches: AdminMatch[] } = await response.json();
+    if (draft?.id !== id) return;
+    const cards = matches.map(match => resultCard(match, () => loadResults(id)));
+    results.replaceChildren(...(cards.length ? cards : [document.createTextNode('Für diese Meisterschaft gibt es noch keine Begegnungen.')]));
+    document.querySelector<HTMLAnchorElement>('#public-detail')!.href = `/meisterschaften/?id=${encodeURIComponent(id)}`;
+  }
+
+  newDraft.onclick = () => {
+    draft = null;
+    setup.hidden = true; phaseForm.hidden = true; resultPanel.hidden = true;
+    newDraft.hidden = true; createForm.hidden = false;
+    existing.value = '';
+    history.replaceState(null, '', location.pathname);
+    createForm.querySelector<HTMLInputElement>('input[name="title"]')?.focus();
+  };
 
   function renderSeeds() {
     seedRows.replaceChildren(...entries.map(entry => {
@@ -165,16 +205,21 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       const item = editable.find(row => row.id === existing.value);
       if (item) openCompetition(item).catch(error => { status.textContent = error.message; });
     };
+    const current = draft?.id ?? new URLSearchParams(location.search).get('id');
+    existing.value = current ?? '';
+    if (!draft && current) {
+      const item = editable.find(row => row.id === current);
+      if (item) await openCompetition(item);
+    }
   }
 
   bind('create', async fields => {
-    draft = await post('', Object.fromEntries(fields));
-    entries = []; renderSeeds();
-    setup.hidden = false;
-    start.hidden = true;
-    preview.replaceChildren();
-    document.querySelector('#draft-title')!.textContent = String(fields.get('title'));
+    const saved = await post('', Object.fromEntries(fields));
+    await openCompetition({ ...saved, title: String(fields.get('title')), status: 'draft' });
+    createForm.reset();
     status.textContent = 'Entwurf gespeichert. Füge jetzt die Teilnehmer hinzu.';
+    document.querySelector<HTMLInputElement>('#player input[name="firstName"]')?.focus();
+    await listCompetitions();
   });
   bind('player', async fields => {
     if (!draft) return;
@@ -222,9 +267,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   });
   bind('start', async fields => {
     if (!draft || !suggested || !confirm('Diese Gruppenauslosung übernehmen und die Vorrunde starten?')) return;
-    await post(`/${draft.id}/auslosung/starten`, { ...suggested, version: draft.version, confirm: true,
+    const id = draft.id;
+    const saved = await post(`/${id}/auslosung/starten`, { ...suggested, version: draft.version, confirm: true,
       publish: fields.has('publish'), allowSubmissions: fields.has('allowSubmissions') });
-    location.href = `/meisterschaften/?id=${encodeURIComponent(draft.id)}`;
+    await openCompetition({ ...saved, id, title: document.querySelector('#draft-title')!.textContent ?? '', status: 'groups_active' });
+    status.textContent = 'Vorrunde gestartet. Die Ergebnisse können jetzt eingetragen werden.';
+    document.querySelector<HTMLElement>('#results-title')?.focus();
+    await listCompetitions();
   });
   bind('phase', async fields => {
     if (!draft) return;
@@ -238,7 +287,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       const names = new Map(groups.map(row => [row.id, row.name ?? row.id]));
       const rows = (response.positions as string[][]).map((players, index) => `Gruppe ${index + 1} · ${players.map(player => names.get(player)).join(', ')}`);
       document.querySelector('#phase-preview')!.textContent = rows.length ? rows.join('\n') : `${response.bracket.length} Begegnungen im K.-o.-Spielplan.`;
-    } else { status.textContent = 'Turnierphase aktualisiert.'; draft.version = response.version; }
+    } else {
+      await openCompetition({ ...response, id: draft.id, title: document.querySelector('#draft-title')!.textContent ?? '',
+        status: action === 'start' ? 'phase_active' : 'finished' });
+      status.textContent = action === 'start' ? 'Folgephase gestartet.' : 'Meisterschaft abgeschlossen.';
+      document.querySelector<HTMLElement>('#results-title')?.focus();
+      await listCompetitions();
+    }
   });
   bind('invite', async fields => {
     const response = await fetch('/api/meisterschaft-login/einladen', { method: 'POST', headers: { 'Content-Type': 'application/json' },

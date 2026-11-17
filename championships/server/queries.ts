@@ -25,13 +25,15 @@ type Match = {
   id: string; phase: number; group_position: number | null; round: number; bracket_position: number | null;
   home: string | null; away: string | null; home_name: string | null; away_name: string | null;
   scheduled_at: string | null; winner: string | null;
+  status?: string; version?: number; editable?: number; proposal?: string | null;
 };
 
 export function publicChampionshipReader(db: QueryDatabase, actor: Actor | null = null) {
   async function all<T>(sql: string, ...values: (string | number | null)[]) {
     return (await db.prepare(sql).bind(...values).all<T>()).results;
   }
-  const fields = `id, title, season, description, status, phase_two, starts_on, ends_on${actor?.role === 'admin' ? ', version' : ''}`;
+  const admin = actor?.active && actor.role === 'admin';
+  const fields = `id, title, season, description, status, phase_two, starts_on, ends_on${admin ? ', version' : ''}`;
   const visible = actor?.active && actor.role === 'admin' ? '1=1' :
     `status <> 'draft' AND published = 1${actor?.active ? '' : " AND visibility = 'public'"}`;
 
@@ -47,7 +49,10 @@ export function publicChampionshipReader(db: QueryDatabase, actor: Actor | null 
           JOIN championship_players p ON p.id = player_id WHERE ${eligible} ORDER BY p.display_name, p.id`,
         `SELECT m.id, phase, group_position, round, bracket_position, home, away,
           h.display_name AS home_name, a.display_name AS away_name, scheduled_at,
-          CASE WHEN m.status IN ('confirmed', 'completed') THEN winner END AS winner
+          CASE WHEN m.status IN ('confirmed', 'completed') THEN winner END AS winner${admin ? `,
+          m.status, m.version, EXISTS(SELECT 1 FROM championship_stages s WHERE s.championship_id=m.championship_id
+            AND s.phase=m.phase AND s.status='active') AS editable,
+          (SELECT score FROM championship_submissions r WHERE r.match_id=m.id AND r.match_version=m.version AND r.status='pending') AS proposal` : ''}
           FROM championship_matches m LEFT JOIN championship_players h ON h.id = home
           LEFT JOIN championship_players a ON a.id = away WHERE ${eligible}
           ORDER BY phase, round, bracket_position, scheduled_at, m.id`,
