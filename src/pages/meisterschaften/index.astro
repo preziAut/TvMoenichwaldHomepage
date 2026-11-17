@@ -129,11 +129,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         const schedule = make('details', '', 'border-t border-[#d9dbd0]');
         const played = matches.filter(match => match.score).length;
         schedule.append(make('summary', `Gruppenspiele · ${played} von ${matches.length} gespielt`, 'cursor-pointer px-4 py-3 text-sm font-semibold sm:px-6'));
-        for (const round of new Set(matches.map(match => match.round))) {
-          const list = make('ul', '', 'divide-y divide-[#e9ece0]');
-          list.append(...matches.filter(match => match.round === round).map(match => matchRow(match)));
-          schedule.append(make('h4', `Runde ${round}`, 'bg-[#f5f3ec] px-4 py-2 text-sm font-semibold'), list);
-        }
+        const list = make('ul', '', 'divide-y divide-[#e9ece0]');
+        list.append(...matches.map(match => matchRow(match)));
+        schedule.append(list);
         card.append(schedule);
       }
       tables.append(card);
