@@ -51,9 +51,10 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       }
       return;
     }
-    type Row = { name: string; rank: number; tied: boolean; wins: number; losses: number; setDiff: number; gameDiff: number };
-    type Group = { phase: number; name: string; rows: Row[] };
-    type Match = { phase: number; round: number; bracket_position: number | null; home: string | null; away: string | null;
+    type Row = { name: string; rank: number; tied: boolean; wins: number; losses: number;
+      setsFor: number; setsAgainst: number; gamesFor: number; gamesAgainst: number };
+    type Group = { phase: number; position: number; name: string; rows: Row[] };
+    type Match = { phase: number; round: number; group_position: number | null; bracket_position: number | null; home: string | null; away: string | null;
       winner: string | null; home_name: string | null; away_name: string | null; score: [number, number][] | null };
     const data: { championship: { title: string; description: string; status: string }; tables: Group[]; matches: Match[] } =
       await load(`/api/meisterschaften/${encodeURIComponent(id)}`);
@@ -71,38 +72,85 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       winner.append(make('p', 'Turniersieger', 'text-sm font-semibold'), make('p', champion, 'mt-2 text-2xl font-bold'));
       detail.append(winner);
     }
-    const tables = make('div', '', 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3');
+    const formatPercent = new Intl.NumberFormat('de-AT', { style: 'percent', maximumFractionDigits: 2 });
+    const percentage = (won: number, lost: number) => won + lost ? formatPercent.format(won / (won + lost)) : '–';
+    const scoreText = (match: Match) => match.score?.map(set => set.join(':')).join(', ') ?? (match.winner ? 'Freilos' : 'Offen');
+    const matchRow = (match: Match, label = '') => {
+      const item = make('li', '', 'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 px-4 py-2.5 text-sm');
+      item.append(make('span', `${label}${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'}`, 'min-w-0 break-words'),
+        make('span', scoreText(match), 'text-right font-semibold tabular-nums'));
+      return item;
+    };
+    const tables = make('div', '', 'grid gap-5');
+    const shortcuts = make('div', '', 'flex flex-wrap gap-2');
     for (const group of data.tables) {
-      const card = make('section', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6');
-      card.append(make('h3', `${group.phase === 1 ? 'Vorrunde' : 'Platzierungsrunde'} · ${group.name}`, 'text-lg font-bold'));
-      const list = make('ol', '', 'mt-3 divide-y divide-[#d9dbd0]');
-      for (const row of group.rows) {
-        const item = make('li', '', 'py-3');
-        item.append(make('p', `${row.rank}. ${row.name}${row.tied ? ' · Gleichstand' : ''}`, 'font-semibold break-words'),
-          make('p', `${row.wins} Siege · ${row.losses} Niederlagen · Satzdiff. ${row.setDiff} · Gamediff. ${row.gameDiff}`, 'mt-1 text-sm'));
-        list.append(item);
+      const anchor = `gruppe-${group.phase}-${group.position}`;
+      const title = `${group.phase === 1 ? 'Vorrunde' : 'Platzierungsrunde'} · ${group.name}`;
+      const jump = make('a', group.name, 'rounded-full border border-[#d9dbd0] bg-white px-3 py-2 text-sm font-semibold hover:bg-[#e9ece0]');
+      jump.href = `#${anchor}`;
+      shortcuts.append(jump);
+      const card = make('section', '', 'min-w-0 scroll-mt-6 rounded-xl border border-[#d9dbd0] bg-white');
+      card.id = anchor;
+      const heading = make('h3', title, 'px-4 py-4 text-lg font-bold sm:px-6');
+      heading.id = `${anchor}-titel`;
+      card.append(heading);
+      const scroll = make('div', '', 'overflow-x-auto');
+      scroll.tabIndex = 0;
+      scroll.setAttribute('role', 'region');
+      scroll.setAttribute('aria-labelledby', heading.id);
+      const table = make('table', '', 'w-full min-w-[38rem] border-collapse text-sm tabular-nums');
+      table.setAttribute('aria-labelledby', heading.id);
+      const head = make('thead', '', 'border-y border-[#d9dbd0] bg-[#f5f3ec]');
+      const columns = make('tr', '', '');
+      for (const [index, label] of ['Pos.', 'Spieler', 'Matches S/N', 'Sätze S/N', 'Satzquote', 'Games S/N', 'Gamequote'].entries()) {
+        const cell = make('th', label, `whitespace-nowrap px-3 py-3 font-semibold ${index < 2 ? 'text-left' : 'text-center'}`);
+        cell.scope = 'col';
+        columns.append(cell);
       }
-      card.append(list);
+      head.append(columns);
+      const body = make('tbody', '', '');
+      for (const row of group.rows) {
+        const item = make('tr', '', 'odd:bg-[#f8f8f5]');
+        const name = make('th', row.name, 'min-w-36 px-3 py-3 text-left font-semibold break-words');
+        name.scope = 'row';
+        if (row.tied) name.append(make('span', 'Gleichstand', 'block text-xs font-normal'));
+        item.append(make('td', String(row.rank), 'px-3 py-3'), name);
+        for (const value of [`${row.wins}–${row.losses}`, `${row.setsFor}–${row.setsAgainst}`, percentage(row.setsFor, row.setsAgainst),
+          `${row.gamesFor}–${row.gamesAgainst}`, percentage(row.gamesFor, row.gamesAgainst)]) {
+          item.append(make('td', value, 'whitespace-nowrap px-3 py-3 text-center font-semibold'));
+        }
+        body.append(item);
+      }
+      table.append(head, body);
+      scroll.append(table);
+      card.append(scroll);
+      const matches = data.matches.filter(match => match.phase === group.phase && match.group_position === group.position);
+      if (matches.length) {
+        const schedule = make('details', '', 'border-t border-[#d9dbd0]');
+        const played = matches.filter(match => match.score).length;
+        schedule.append(make('summary', `Gruppenspiele · ${played} von ${matches.length} gespielt`, 'cursor-pointer px-4 py-3 text-sm font-semibold sm:px-6'));
+        for (const round of new Set(matches.map(match => match.round))) {
+          const list = make('ul', '', 'divide-y divide-[#e9ece0]');
+          list.append(...matches.filter(match => match.round === round).map(match => matchRow(match)));
+          schedule.append(make('h4', `Runde ${round}`, 'bg-[#f5f3ec] px-4 py-2 text-sm font-semibold'), list);
+        }
+        card.append(schedule);
+      }
       tables.append(card);
     }
-    if (data.tables.length) detail.append(make('h3', 'Gruppentabellen', 'text-xl font-bold'), tables);
-    if (data.matches.length) {
-      const roundOne = data.matches.filter(match => match.phase === 1);
-      const roundTwo = data.matches.filter(match => match.phase === 2);
-      detail.append(make('h3', 'Spielplan', 'text-xl font-bold'));
-      for (const [title, matches] of [[finals.length ? 'K.-o.-Runde' : 'Platzierungsrunde', roundTwo], ['Vorrunde', roundOne]] as const) {
-        if (!matches.length) continue;
-        const list = make('ul', '', 'divide-y divide-[#d9dbd0]');
-        for (const match of matches) {
-          const score = match.score?.map(set => set.join(':')).join(', ') ?? (match.winner ? 'Freilos' : 'Offen');
-          const label = match === final ? 'Finale · ' : (finals.includes(match) && match.round === lastRound ? 'Spiel um Platz 3 · ' : '');
-          list.append(make('li', `${label}${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'} · ${score}`, 'py-3 break-words'));
-        }
-        const section = make('details', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4');
-        section.open = matches === roundTwo || !roundTwo.length;
-        section.append(make('summary', `${title} · ${matches.length} Begegnungen`, 'cursor-pointer font-semibold'), list);
-        detail.append(section);
+    if (data.tables.length) {
+      detail.append(make('h3', 'Gruppentabellen und Vorrundenspiele', 'text-xl font-bold'), shortcuts, tables);
+    }
+    if (finals.length) {
+      const list = make('ul', '', 'divide-y divide-[#d9dbd0]');
+      for (const match of finals) {
+        const label = match === final ? 'Finale · ' : (match.round === lastRound ? 'Spiel um Platz 3 · ' : '');
+        list.append(matchRow(match, label));
       }
+      const section = make('details', '', 'rounded-xl border border-[#d9dbd0] bg-white');
+      section.open = true;
+      section.append(make('summary', `K.-o.-Runde · ${finals.length} Begegnungen`, 'cursor-pointer px-4 py-3 font-semibold'), list);
+      detail.append(section);
     }
     detail.hidden = false;
   }
