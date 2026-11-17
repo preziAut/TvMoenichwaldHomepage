@@ -19,3 +19,4 @@ booking/.private/
 *.sqlite3
 *.db
 !booking/migrations/*.sql
+!championships/migrations/*.sql
