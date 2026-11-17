@@ -12,6 +12,7 @@
     "preview": "node scripts/astro.mjs preview --host 127.0.0.1",
     "check": "node scripts/astro.mjs check",
     "test": "node scripts/redirect-data.mjs && node --test tests/*.test.mjs",
+    "test:mobile": "node tests/championships-mobile.browser.mjs",
     "verify": "node scripts/verify.mjs",
     "migrate": "node scripts/migrate.mjs"
   },
@@ -20,6 +21,8 @@
     "@astrojs/sitemap": "latest",
     "@tailwindcss/vite": "latest",
     "astro": "7.4.12",
+    "better-auth": "1.7.25",
+    "kysely": "0.28.17",
     "lucide-astro": "^0.556.0",
     "tailwindcss": "latest"
   },
@@ -27,6 +30,7 @@
     "@astrojs/check": "latest",
     "cheerio": "latest",
     "node": "^24.22.3",
+    "playwright-core": "1.65.1",
     "sanitize-html": "latest",
     "sharp": "latest",
     "turndown": "latest",

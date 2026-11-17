@@ -1,0 +1,277 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SectionContainer from '../../components/ui/SectionContainer.astro';
+---
+<Layout title="Meisterschaften verwalten">
+  <SectionContainer aria-labelledby="title">
+    <a href="/meisterschaften/" class="text-sm font-semibold underline underline-offset-4">Einzelmeisterschaften</a>
+    <h1 id="title" class="my-4 text-4xl font-bold text-[#173a2e]">Meisterschaften verwalten</h1>
+    <p id="admin-status" role="status" class="my-4 text-sm"></p>
+    <p class="my-4"><a class="text-sm font-semibold underline" href="/meisterschaften/anmelden/">Zum Vereinslogin</a></p>
+    <label id="existing-label" hidden>Vorhandene Meisterschaft öffnen<select id="existing" class="mt-2 block w-full max-w-lg rounded-lg border border-[#9fa995] p-3"><option value="">Bitte auswählen</option></select></label>
+    <div class="grid gap-5 lg:grid-cols-2">
+      <form id="create" class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+        <h2 class="mb-4 text-xl font-bold">Neue Meisterschaft</h2>
+        <label>Titel<input name="title" required maxlength="120" /></label>
+        <label>Beginn<input name="startsOn" type="date" required /></label>
+        <label>Folgephase<select name="phaseTwo" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="placement">Platzierungsgruppen</option><option value="knockout">K.-o.-Runde</option></select></label>
+        <label>Sichtbarkeit<select name="visibility" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="club">Vereinsintern</option><option value="public">Öffentlich</option></select></label>
+        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Entwurf anlegen</button>
+      </form>
+      <div id="setup" hidden class="space-y-4 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+        <h2 id="draft-title" class="text-xl font-bold"></h2>
+        <form id="player">
+          <label>Vorname<input name="firstName" required maxlength="70" /></label>
+          <label>Nachname<input name="lastName" required maxlength="70" /></label>
+          <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Teilnehmer hinzufügen</button>
+        </form>
+        <form id="seeds">
+          <fieldset><legend class="mb-3 font-semibold">Setzliste</legend><div id="seed-rows"></div></fieldset>
+          <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Setzliste speichern</button>
+        </form>
+        <form id="draw">
+          <label>Anzahl Gruppen<input name="groupCount" type="number" min="1" max="16" required value="2" /></label>
+          <label><input id="manual-toggle" type="checkbox" /> Gruppen manuell zuweisen</label>
+          <div id="manual-groups" hidden></div>
+          <label id="manual-reason" hidden>Begründung bei ungleich großen Gruppen<input name="reason" maxlength="500" /></label>
+          <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Auslosung ansehen</button>
+        </form>
+        <ol id="preview" class="space-y-2"></ol>
+        <form id="start" hidden>
+          <label><input name="publish" type="checkbox" /> Meisterschaft veröffentlichen</label>
+          <label><input name="allowSubmissions" type="checkbox" /> Ergebnismeldung durch Spieler zulassen</label>
+          <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Vorrunde starten</button>
+        </form>
+      </div>
+      <form id="phase" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+        <h2 class="mb-4 text-xl font-bold">Turnierphase verwalten</h2>
+        <label>Anzahl Qualifikanten (K.-o.)<input name="qualifiers" type="number" min="2" max="8" value="4" /></label>
+        <label><input name="bronze" type="checkbox" /> Spiel um Platz 3</label>
+        <p id="phase-preview" class="my-3 whitespace-pre-line text-sm"></p>
+        <div class="flex flex-wrap gap-2">
+          <button name="action" value="preview" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Folgephase ansehen</button>
+          <button name="action" value="start" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Folgephase starten</button>
+          <button name="action" value="finish" class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Meisterschaft abschließen</button>
+        </div>
+      </form>
+      <form id="invite" class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+        <h2 class="mb-4 text-xl font-bold">Vereinszugang einladen</h2>
+        <label>E-Mail-Adresse<input name="email" type="email" required maxlength="254" /></label>
+        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Einladung senden</button>
+      </form>
+      <form id="access" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+        <h2 class="mb-4 text-xl font-bold">Spieler freischalten</h2>
+        <label>Vereinskonto<select name="email" id="accounts" required class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"></select></label>
+        <label>Spielerprofil<select name="playerId" id="players" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"></select></label>
+        <label><input name="canSubmit" type="checkbox" /> Ergebnismeldungen erlauben</label>
+        <div class="flex flex-wrap gap-2">
+          <button name="action" value="link" class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Zuordnung speichern</button>
+          <button name="action" value="disable" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Konto sperren</button>
+          <button name="action" value="enable" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Konto entsperren</button>
+        </div>
+      </form>
+    </div>
+  </SectionContainer>
+</Layout>
+
+<script>
+  const status = document.querySelector<HTMLElement>('#admin-status')!;
+  const setup = document.querySelector<HTMLElement>('#setup')!;
+  const preview = document.querySelector<HTMLOListElement>('#preview')!;
+  const start = document.querySelector<HTMLFormElement>('#start')!;
+  const existing = document.querySelector<HTMLSelectElement>('#existing')!;
+  const phaseForm = document.querySelector<HTMLFormElement>('#phase')!;
+  const seedRows = document.querySelector('#seed-rows')!;
+  const manualToggle = document.querySelector<HTMLInputElement>('#manual-toggle')!;
+  const manualGroups = document.querySelector<HTMLElement>('#manual-groups')!;
+  type Summary = { id: string; title: string; version: number; status: string };
+  type Entry = { id: string; display_name: string; seed: number | null };
+  let entries: Entry[] = [];
+  let draft: { id: string; version: number } | null = null;
+  let suggested: { groupCount: number; seed: number; groups?: string[][]; reason?: string } | null = null;
+
+  function bind(id: string, run: (data: FormData) => Promise<void>) {
+    const form = document.querySelector<HTMLFormElement>(`#${id}`)!;
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const button = (event as SubmitEvent).submitter as HTMLButtonElement ?? form.querySelector('button')!;
+      const fields = new FormData(form, button);
+      button.disabled = true;
+      status.textContent = '';
+      try { await run(fields); }
+      catch (error) { status.textContent = error instanceof Error ? error.message : 'Aktion fehlgeschlagen.'; }
+      finally { button.disabled = false; }
+    });
+  }
+
+  async function post(path: string, value: object) {
+    const response = await fetch(`/api/meisterschaften${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
+    const output = await response.json();
+    if (!response.ok) throw new Error(output.error ?? 'Aktion fehlgeschlagen.');
+    return output;
+  }
+
+  async function openCompetition(item: Summary) {
+    draft = { id: item.id, version: item.version };
+    start.hidden = true;
+    suggested = null;
+    preview.replaceChildren();
+    setup.hidden = item.status !== 'draft';
+    phaseForm.hidden = !['groups_active', 'phase_active'].includes(item.status);
+    document.querySelector('#draft-title')!.textContent = item.title;
+    if (item.status === 'draft') {
+      const response = await fetch(`/api/meisterschaften/${encodeURIComponent(item.id)}/teilnehmer`);
+      if (!response.ok) throw new Error('Teilnehmer konnten nicht geladen werden.');
+      entries = await response.json();
+      renderSeeds();
+    }
+  }
+
+  function renderSeeds() {
+    seedRows.replaceChildren(...entries.map(entry => {
+      const label = document.createElement('label');
+      label.textContent = entry.display_name;
+      const input = document.createElement('input');
+      input.type = 'number'; input.min = '1'; input.max = '32'; input.name = entry.id;
+      input.placeholder = 'Ungesetzt'; input.value = entry.seed?.toString() ?? '';
+      label.append(input);
+      return label;
+    }));
+    manualGroups.replaceChildren(...entries.map(entry => {
+      const label = document.createElement('label');
+      label.textContent = `Gruppe für ${entry.display_name}`;
+      const input = document.createElement('input');
+      input.type = 'number'; input.inputMode = 'numeric'; input.min = '1'; input.max = '16'; input.name = `group-${entry.id}`;
+      label.append(input);
+      return label;
+    }));
+  }
+  manualToggle.onchange = () => {
+    manualGroups.hidden = !manualToggle.checked;
+    document.querySelector<HTMLElement>('#manual-reason')!.hidden = !manualToggle.checked;
+    suggested = null;
+    start.hidden = true;
+    preview.replaceChildren();
+  };
+
+  async function listCompetitions() {
+    const response = await fetch('/api/meisterschaften');
+    if (!response.ok) return;
+    const items: Summary[] = await response.json();
+    const editable = items.filter(item => typeof item.version === 'number');
+    existing.replaceChildren(new Option('Bitte auswählen', ''), ...editable.map(item => new Option(item.title, item.id)));
+    document.querySelector<HTMLElement>('#existing-label')!.hidden = editable.length === 0;
+    existing.onchange = () => {
+      const item = editable.find(row => row.id === existing.value);
+      if (item) openCompetition(item).catch(error => { status.textContent = error.message; });
+    };
+  }
+
+  bind('create', async fields => {
+    draft = await post('', Object.fromEntries(fields));
+    entries = []; renderSeeds();
+    setup.hidden = false;
+    start.hidden = true;
+    preview.replaceChildren();
+    document.querySelector('#draft-title')!.textContent = String(fields.get('title'));
+    status.textContent = 'Entwurf gespeichert. Füge jetzt die Teilnehmer hinzu.';
+  });
+  bind('player', async fields => {
+    if (!draft) return;
+    draft = await post(`/${draft.id}/teilnehmer`, { ...Object.fromEntries(fields), version: draft.version });
+    const response = await fetch(`/api/meisterschaften/${encodeURIComponent(draft!.id)}/teilnehmer`);
+    if (response.ok) { entries = await response.json(); renderSeeds(); }
+    document.querySelector<HTMLFormElement>('#player')!.reset();
+    start.hidden = true;
+    preview.replaceChildren();
+    status.textContent = 'Teilnehmer hinzugefügt.';
+  });
+  bind('seeds', async fields => {
+    if (!draft) return;
+    const selected = [...fields].filter(([, value]) => value !== '');
+    if (new Set(selected.map(([, value]) => value)).size !== selected.length) throw new Error('Jeder Setzplatz darf nur einmal vergeben werden.');
+    const order = selected.sort((a, b) => Number(a[1]) - Number(b[1])).map(([id]) => id);
+    draft = await post(`/${draft.id}/setzliste`, { order, version: draft.version });
+    start.hidden = true;
+    preview.replaceChildren();
+    status.textContent = 'Setzliste gespeichert.';
+  });
+  bind('draw', async fields => {
+    if (!draft) return;
+    const groupCount = Number(fields.get('groupCount'));
+    let groups: string[][] | undefined;
+    if (manualToggle.checked) {
+      groups = Array.from({ length: groupCount }, () => []);
+      for (const entry of entries) {
+        const group = Number(fields.get(`group-${entry.id}`));
+        if (!Number.isInteger(group) || group < 1 || group > groupCount) throw new Error(`Gruppe für ${entry.display_name} auswählen.`);
+        groups[group - 1].push(entry.id);
+      }
+    }
+    const reason = String(fields.get('reason') ?? '');
+    const result: { seed: number; entries: { id: string; display_name: string }[]; groups: string[][] } =
+      await post(`/${draft.id}/auslosung/vorschau`, { groupCount, groups, reason, version: draft.version });
+    suggested = { groupCount, seed: result.seed, groups, reason };
+    const names = new Map(result.entries.map(entry => [entry.id, entry.display_name]));
+    preview.replaceChildren(...result.groups.map((group, index) => {
+      const item = document.createElement('li');
+      item.textContent = `Gruppe ${String.fromCharCode(65 + index)} · ${group.map(id => names.get(id)).join(', ')}`;
+      return item;
+    }));
+    start.hidden = false;
+  });
+  bind('start', async fields => {
+    if (!draft || !suggested || !confirm('Diese Gruppenauslosung übernehmen und die Vorrunde starten?')) return;
+    await post(`/${draft.id}/auslosung/starten`, { ...suggested, version: draft.version, confirm: true,
+      publish: fields.has('publish'), allowSubmissions: fields.has('allowSubmissions') });
+    location.href = `/meisterschaften/?id=${encodeURIComponent(draft.id)}`;
+  });
+  bind('phase', async fields => {
+    if (!draft) return;
+    const action = fields.get('action');
+    const endpoint = action === 'preview' ? 'folgephase/vorschau' : action === 'start' ? 'folgephase/starten' : 'abschliessen';
+    if (action !== 'preview' && !confirm('Diese Turnierphase verbindlich ändern?')) return;
+    const response = await post(`/${draft.id}/${endpoint}`, { version: draft.version,
+      qualifiers: Number(fields.get('qualifiers')), bronze: fields.has('bronze'), confirm: action !== 'preview' });
+    if (action === 'preview') {
+      const groups = response.rankings.flat() as { id: string; name?: string }[];
+      const names = new Map(groups.map(row => [row.id, row.name ?? row.id]));
+      const rows = (response.positions as string[][]).map((players, index) => `Gruppe ${index + 1} · ${players.map(player => names.get(player)).join(', ')}`);
+      document.querySelector('#phase-preview')!.textContent = rows.length ? rows.join('\n') : `${response.bracket.length} Begegnungen im K.-o.-Spielplan.`;
+    } else { status.textContent = 'Turnierphase aktualisiert.'; draft.version = response.version; }
+  });
+  bind('invite', async fields => {
+    const response = await fetch('/api/meisterschaft-login/einladen', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: fields.get('email') }) });
+    const output = await response.json();
+    if (!response.ok) throw new Error(output.error ?? 'Einladung fehlgeschlagen.');
+    status.textContent = 'Einladung verarbeitet.';
+    await loadAccounts();
+  });
+  async function loadAccounts() {
+    const response = await fetch('/api/meisterschaft-konten');
+    if (!response.ok) return;
+    const { accounts, players }: { accounts: { email: string; verified: number | null; active: number }[];
+      players: { id: string; display_name: string; active: number }[] } = await response.json();
+    document.querySelector('#accounts')!.replaceChildren(new Option('Bitte auswählen', ''), ...accounts.map(account =>
+      new Option(`${account.email}${!account.verified ? ' · unbestätigt' : !account.active ? ' · gesperrt' : ''}`, account.email)));
+    document.querySelector('#players')!.replaceChildren(new Option('Bitte auswählen', ''), ...players.filter(player => player.active).map(player =>
+      new Option(player.display_name, player.id)));
+    document.querySelector<HTMLElement>('#access')!.hidden = !accounts.length;
+  }
+  bind('access', async fields => {
+    const action = fields.get('action');
+    const email = fields.get('email');
+    const payload = action === 'link' ? { action, email, playerId: fields.get('playerId'), canSubmit: fields.has('canSubmit') } :
+      { action: 'account', email, active: action === 'enable' };
+    if (action === 'disable' && !confirm('Konto sperren und aktive Anmeldungen widerrufen?')) return;
+    const response = await fetch('/api/meisterschaft-konten', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload) });
+    const output = await response.json();
+    if (!response.ok) throw new Error(output.error ?? 'Speichern fehlgeschlagen.');
+    status.textContent = 'Konto aktualisiert.';
+    await loadAccounts();
+  });
+  listCompetitions().catch(() => {});
+  loadAccounts().catch(() => {});
+</script>

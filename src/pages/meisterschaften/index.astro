@@ -1,0 +1,89 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SectionContainer from '../../components/ui/SectionContainer.astro';
+---
+
+<Layout title="Einzelmeisterschaften">
+  <SectionContainer aria-labelledby="title">
+    <a href="/turniere/" class="text-sm font-semibold underline underline-offset-4">Alle Turniere</a>
+    <h1 id="title" class="mt-4 font-['Instrument_Serif',Georgia,serif] text-5xl text-[#173a2e] sm:text-6xl">Einzelmeisterschaften</h1>
+    <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold">
+      <a class="underline underline-offset-4" href="/meisterschaften/anmelden/">Anmelden</a>
+      <a class="underline underline-offset-4" href="/meisterschaften/meine-spiele/">Meine Spiele</a>
+      <a class="underline underline-offset-4" href="/meisterschaften/admin/">Verwaltung</a>
+    </div>
+    <p id="status" class="mt-5 text-sm" role="status">Meisterschaften werden geladen …</p>
+    <ul id="events" class="mt-6 grid gap-3 sm:grid-cols-2"></ul>
+    <section id="detail" hidden class="mt-8 space-y-7" aria-label="Meisterschaft im Detail"></section>
+  </SectionContainer>
+</Layout>
+
+<script>
+  const status = document.querySelector<HTMLElement>('#status')!;
+  const events = document.querySelector<HTMLElement>('#events')!;
+  const detail = document.querySelector<HTMLElement>('#detail')!;
+  const phases: Record<string, string> = { groups_active: 'Vorrunde', groups_closed: 'Vorrunde abgeschlossen',
+    phase_prepared: 'Folgephase vorbereitet', phase_active: 'Folgephase', finished: 'Abgeschlossen', archived: 'Archiv' };
+  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, label: string, classes: string) => {
+    const element = document.createElement(tag);
+    element.textContent = label;
+    element.className = classes;
+    return element;
+  };
+
+  async function load(path: string) {
+    const response = await fetch(path, { headers: { Accept: 'application/json' } });
+    if (!response.ok) throw new Error();
+    return response.json();
+  }
+
+  async function render() {
+    const id = new URLSearchParams(location.search).get('id');
+    if (!id) {
+      const list: { id: string; title: string; season: number; status: string }[] = await load('/api/meisterschaften');
+      status.textContent = list.length ? '' : 'Derzeit sind keine Meisterschaften veröffentlicht.';
+      for (const event of list) {
+        const item = make('li', '', 'rounded-xl border border-[#d9dbd0] bg-white p-5');
+        const link = make('a', event.title, 'block text-xl font-semibold underline-offset-4 hover:underline');
+        link.href = `?id=${encodeURIComponent(event.id)}`;
+        item.append(link, make('p', `${event.season} · ${phases[event.status] ?? 'Entwurf'}`, 'mt-2 text-sm text-[#4c5d52]'));
+        events.append(item);
+      }
+      return;
+    }
+    type Row = { name: string; rank: number; tied: boolean; wins: number; losses: number; setDiff: number; gameDiff: number };
+    type Group = { phase: number; name: string; rows: Row[] };
+    type Match = { phase: number; home_name: string | null; away_name: string | null; score: [number, number][] | null };
+    const data: { championship: { title: string; description: string; status: string }; tables: Group[]; matches: Match[] } =
+      await load(`/api/meisterschaften/${encodeURIComponent(id)}`);
+    status.textContent = phases[data.championship.status] ?? 'Entwurf';
+    const back = make('a', 'Alle Einzelmeisterschaften', 'inline-block text-sm font-semibold underline underline-offset-4');
+    back.href = '/meisterschaften/';
+    detail.append(back, make('h2', data.championship.title, 'text-3xl font-bold break-words'));
+    if (data.championship.description) detail.append(make('p', data.championship.description, 'max-w-prose text-[#4c5d52]'));
+    for (const group of data.tables) {
+      const card = make('section', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6');
+      card.append(make('h3', `${group.phase === 1 ? 'Vorrunde' : 'Platzierungsrunde'} · ${group.name}`, 'text-lg font-bold'));
+      const list = make('ol', '', 'mt-3 divide-y divide-[#d9dbd0]');
+      for (const row of group.rows) {
+        const item = make('li', '', 'py-3');
+        item.append(make('p', `${row.rank}. ${row.name}${row.tied ? ' · Gleichstand' : ''}`, 'font-semibold break-words'),
+          make('p', `${row.wins} Siege · ${row.losses} Niederlagen · Satzdiff. ${row.setDiff} · Gamediff. ${row.gameDiff}`, 'mt-1 text-sm'));
+        list.append(item);
+      }
+      card.append(list);
+      detail.append(card);
+    }
+    if (data.matches.length) {
+      const list = make('ul', '', 'divide-y divide-[#d9dbd0]');
+      for (const match of data.matches) {
+        const score = match.score?.map(set => set.join(':')).join(', ') ?? 'Offen';
+        list.append(make('li', `${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'} · ${score}`, 'py-3 break-words'));
+      }
+      detail.append(make('h3', 'Spielplan', 'text-xl font-bold'), list);
+    }
+    detail.hidden = false;
+  }
+
+  render().catch(() => { status.textContent = 'Die Meisterschaftsdaten sind derzeit nicht verfügbar.'; });
+</script>

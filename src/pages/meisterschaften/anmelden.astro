@@ -1,0 +1,49 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import SectionContainer from '../../components/ui/SectionContainer.astro';
+---
+<Layout title="Bei den Einzelmeisterschaften anmelden">
+  <SectionContainer aria-labelledby="title">
+    <div class="max-w-lg rounded-xl border border-[#d9dbd0] bg-white p-5 sm:p-8">
+      <h1 id="title" class="text-3xl font-bold text-[#173a2e]">Anmelden</h1>
+      <p class="my-4">Vereinsmitglieder mit Einladung erhalten einen einmaligen Anmeldelink per E-Mail.</p>
+      <form id="email-form">
+        <label>E-Mail-Adresse<input type="email" name="email" required autocomplete="email" maxlength="254" /></label>
+        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Anmeldelink anfordern</button>
+      </form>
+      <button id="verify" hidden class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Anmeldung bestätigen</button>
+      <p id="login-status" role="status" class="my-4 text-sm"></p>
+      <button id="logout" class="min-h-11 text-sm font-semibold underline underline-offset-4">Abmelden</button>
+    </div>
+  </SectionContainer>
+</Layout>
+
+<script>
+  const form = document.querySelector<HTMLFormElement>('#email-form')!;
+  const verify = document.querySelector<HTMLButtonElement>('#verify')!;
+  const logout = document.querySelector<HTMLButtonElement>('#logout')!;
+  const status = document.querySelector('#login-status')!;
+  const token = location.hash.slice(1);
+  if (token) history.replaceState(null, '', location.pathname);
+  if (/^[a-f0-9]{64}$/.test(token)) { verify.hidden = false; form.hidden = true; }
+  async function send(action: string, body: object, button: HTMLButtonElement) {
+    button.disabled = true;
+    status.textContent = '';
+    try {
+      const response = await fetch(`/api/meisterschaft-login/${action}`, { method: 'POST',
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? 'Anmeldung fehlgeschlagen.');
+      return true;
+    } catch (error) { status.textContent = error instanceof Error ? error.message : 'Anmeldung fehlgeschlagen.'; return false; }
+    finally { button.disabled = false; }
+  }
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (await send('link', { email: new FormData(form).get('email') }, form.querySelector('button')!)) {
+      status.textContent = 'Wenn deine Adresse freigeschaltet ist, erhältst du eine E-Mail.';
+    }
+  });
+  verify.onclick = async () => { if (await send('bestaetigen', { token }, verify)) location.href = '/meisterschaften/meine-spiele/'; };
+  logout.onclick = async () => { if (await send('abmelden', {}, logout)) location.href = '/meisterschaften/'; };
+</script>
