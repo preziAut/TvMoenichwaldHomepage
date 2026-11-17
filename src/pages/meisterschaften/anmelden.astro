@@ -6,6 +6,12 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   <SectionContainer aria-labelledby="title">
     <div class="max-w-lg rounded-xl border border-[#d9dbd0] bg-white p-5 sm:p-8">
       <h1 id="title" class="text-3xl font-bold text-[#173a2e]">Anmelden</h1>
+      <form id="password-form" method="post" class="mt-5 border-b border-[#d9dbd0] pb-5" aria-label="Admin-Anmeldung">
+        <h2 class="mb-3 text-lg font-semibold">Admin-Anmeldung</h2>
+        <label>E-Mail-Adresse<input type="email" name="email" required autocomplete="username" maxlength="254" /></label>
+        <label>Passwort<input type="password" name="password" required autocomplete="current-password" maxlength="128" /></label>
+        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Mit Passwort anmelden</button>
+      </form>
       <p class="my-4">Vereinsmitglieder mit Einladung erhalten einen einmaligen Anmeldelink per E-Mail.</p>
       <form id="email-form">
         <label>E-Mail-Adresse<input type="email" name="email" required autocomplete="email" maxlength="254" /></label>
@@ -20,12 +26,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
 
 <script>
   const form = document.querySelector<HTMLFormElement>('#email-form')!;
+  const passwordForm = document.querySelector<HTMLFormElement>('#password-form')!;
   const verify = document.querySelector<HTMLButtonElement>('#verify')!;
   const logout = document.querySelector<HTMLButtonElement>('#logout')!;
   const status = document.querySelector('#login-status')!;
   const token = location.hash.slice(1);
   if (token) history.replaceState(null, '', location.pathname);
-  if (/^[a-f0-9]{64}$/.test(token)) { verify.hidden = false; form.hidden = true; }
+  if (/^[a-f0-9]{64}$/.test(token)) { verify.hidden = false; form.hidden = true; passwordForm.hidden = true; }
   async function send(action: string, body: object, button: HTMLButtonElement) {
     button.disabled = true;
     status.textContent = '';
@@ -42,6 +49,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     event.preventDefault();
     if (await send('link', { email: new FormData(form).get('email') }, form.querySelector('button')!)) {
       status.textContent = 'Wenn deine Adresse freigeschaltet ist, erhältst du eine E-Mail.';
+    }
+  });
+  passwordForm.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (await send('passwort', Object.fromEntries(new FormData(passwordForm)), passwordForm.querySelector('button')!)) {
+      passwordForm.reset();
+      location.href = '/meisterschaften/admin/';
     }
   });
   verify.onclick = async () => { if (await send('bestaetigen', { token }, verify)) location.href = '/meisterschaften/meine-spiele/'; };

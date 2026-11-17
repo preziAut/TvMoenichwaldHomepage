@@ -3,6 +3,7 @@ import { digest, identity } from '../../../championships/server/identity.ts';
 import { world4youEmail } from '../../../championships/server/email.ts';
 import { championshipSessions } from '../../../championships/server/sessions.ts';
 import { parseBody } from '../spiele/[[path]].ts';
+import { validateAdminPassword } from '../../../championships/server/admin-password.ts';
 
 type DB = Parameters<typeof championshipSessions>[0];
 type Env = { DB?: DB; CHAMPIONSHIP_ORIGIN?: string; CHAMPIONSHIP_AUTH_SECRET?: string; CHAMPIONSHIP_SMTP_USER?: string; CHAMPIONSHIP_SMTP_PASSWORD?: string };
@@ -24,9 +25,11 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
   const sessions = championshipSessions(db);
   const action = url.pathname.replace(/\/$/, '').split('/').at(-1);
   if (action === 'abmelden') return reply({ ok: true }, 200, await sessions.revoke(request));
-  if (!['link', 'bestaetigen', 'einladen'].includes(action ?? '')) return reply({ error: 'Aktion nicht gefunden.' }, 404);
-  if (!env.CHAMPIONSHIP_AUTH_SECRET || env.CHAMPIONSHIP_AUTH_SECRET.length < 32 ||
-      !env.CHAMPIONSHIP_SMTP_USER || !env.CHAMPIONSHIP_SMTP_PASSWORD) return reply({ error: 'Anmeldung nicht verfügbar.' }, 503);
+  if (!['link', 'bestaetigen', 'einladen', 'passwort'].includes(action ?? '')) return reply({ error: 'Aktion nicht gefunden.' }, 404);
+  if (!env.CHAMPIONSHIP_AUTH_SECRET || env.CHAMPIONSHIP_AUTH_SECRET.length < 32) return reply({ error: 'Anmeldung nicht verfügbar.' }, 503);
+  if (action !== 'passwort' && (!env.CHAMPIONSHIP_SMTP_USER || !env.CHAMPIONSHIP_SMTP_PASSWORD)) {
+    return reply({ error: 'Anmeldung per E-Mail nicht verfügbar.' }, 503);
+  }
   if (request.headers.get('Content-Type')?.split(';')[0].trim() !== 'application/json') return reply({ error: 'JSON erwartet.' }, 415);
   const body = await parseBody(request);
   if (!body) return reply({ error: 'Ungültige Anfrage.' }, 422);
@@ -40,9 +43,24 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
       .bind(await digest(`${env.CHAMPIONSHIP_AUTH_SECRET}:${key}`), window, limit).run()).meta.changes === 1;
     if (!await bucket(`ip:${ip}`, 20)) return reply({ error: 'Zu viele Anfragen. Bitte warte einige Minuten.' }, 429);
     await db.prepare('DELETE FROM championship_login_limits WHERE window<?').bind(window - 2).run();
+    if (action === 'passwort') {
+      if (!validMail.test(email) || email.length > 254 || typeof body.password !== 'string') {
+        return reply({ error: 'E-Mail-Adresse und Passwort eingeben.' }, 422);
+      }
+      if (!await bucket(`admin-password:${email}`, 6)) return reply({ error: 'Zu viele Anfragen. Bitte warte einige Minuten.' }, 429);
+      const record = await db.prepare(`SELECT m.user_id,p.salt,p.password_hash FROM championship_admin_passwords p
+        JOIN championship_memberships m ON m.user_id=p.user_id JOIN championship_member_emails e ON e.user_id=m.user_id
+        WHERE e.email=? AND m.active=1 AND m.role='admin'`).bind(email)
+        .first<{ user_id: string; salt: string; password_hash: string }>();
+      if (!await validateAdminPassword(body.password, record ?? undefined) || !record) {
+        return reply({ error: 'E-Mail-Adresse oder Passwort ist ungültig.' }, 401);
+      }
+      await sessions.revoke(request);
+      return reply({ ok: true }, 200, await sessions.issue(record.user_id));
+    }
     const { connect } = await import('cloudflare:sockets');
     const auth = await identity(db as BetterAuthOptions['database'], url.origin, env.CHAMPIONSHIP_AUTH_SECRET,
-      world4youEmail(connect, { username: env.CHAMPIONSHIP_SMTP_USER, password: env.CHAMPIONSHIP_SMTP_PASSWORD }));
+      world4youEmail(connect, { username: env.CHAMPIONSHIP_SMTP_USER!, password: env.CHAMPIONSHIP_SMTP_PASSWORD! }));
     if (action === 'bestaetigen') {
       if (typeof body.token !== 'string' || !/^[a-f0-9]{64}$/.test(body.token)) return reply({ error: 'Ungültiger Anmeldelink.' }, 422);
       let verified;
