@@ -13,6 +13,8 @@ export interface AdminDatabase {
 export class AdminInputError extends Error {}
 const invalid = (message: string): never => { throw new AdminInputError(message); };
 const string = (value: unknown, max: number) => typeof value === 'string' && value.trim().length <= max ? value.trim() : '';
+const contactName = (value: string) => value.normalize('NFKC').trim().replace(/\s+/gu, ' ');
+const contactKey = (first: string, last: string) => JSON.stringify([first, last].map(name => contactName(name).toLocaleLowerCase('de-AT')));
 const date = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value) &&
   Number.isFinite(Date.parse(`${value}T00:00:00Z`)) && new Date(`${value}T00:00:00Z`).toISOString().slice(0, 10) === value;
 
@@ -55,13 +57,27 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
   if (operation === 'teilnehmer') {
     if (entries.length >= 32) invalid('Höchstens 32 Teilnehmer sind möglich.');
     const existing = string(body.playerId, 80);
-    const first = string(body.firstName, 70);
-    const last = string(body.lastName, 70);
+    const first = contactName(string(body.firstName, 70));
+    const last = contactName(string(body.lastName, 70));
     if (!existing && (!first || !last)) invalid('Vor- und Nachname eingeben oder einen Spieler auswählen.');
     if (existing && entries.some(entry => entry.id === existing)) invalid('Dieser Spieler nimmt bereits teil.');
     const playerId = existing || crypto.randomUUID();
-    if (!existing) batch.push(statement('INSERT INTO championship_players (id,first_name,last_name,display_name) VALUES (?,?,?,?)',
-      playerId, first, last, string(body.displayName, 140) || `${first} ${last}`));
+    if (existing) {
+      if (!await statement('SELECT id FROM championship_players WHERE id=? AND active=1', existing).first()) {
+        invalid('Dieser Kontakt ist nicht mehr aktiv.');
+      }
+    } else {
+      const key = contactKey(first, last);
+      const { results: legacy } = await statement('SELECT first_name,last_name FROM championship_players WHERE contact_key IS NULL').all<{
+        first_name: string; last_name: string;
+      }>();
+      if (legacy.some(contact => contactKey(contact.first_name, contact.last_name) === key) ||
+          await statement('SELECT id FROM championship_players WHERE contact_key=?', key).first()) {
+        invalid('Diesen Kontakt gibt es bereits. Bitte unter „Vorhandenen Kontakt auswählen“ hinzufügen.');
+      }
+      batch.push(statement('INSERT INTO championship_players (id,first_name,last_name,display_name,contact_key) VALUES (?,?,?,?,?)',
+        playerId, first, last, string(body.displayName, 140) || `${first} ${last}`, key));
+    }
     batch.push(statement(`INSERT INTO championship_entries (championship_id,player_id) VALUES
       (?,(SELECT id FROM championship_players WHERE id=? AND active=1))`, id, playerId));
   } else if (operation === 'setzliste') {

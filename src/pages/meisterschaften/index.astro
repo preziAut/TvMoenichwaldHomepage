@@ -53,7 +53,8 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     }
     type Row = { name: string; rank: number; tied: boolean; wins: number; losses: number; setDiff: number; gameDiff: number };
     type Group = { phase: number; name: string; rows: Row[] };
-    type Match = { phase: number; home_name: string | null; away_name: string | null; score: [number, number][] | null };
+    type Match = { phase: number; round: number; bracket_position: number | null; home: string | null; away: string | null;
+      winner: string | null; home_name: string | null; away_name: string | null; score: [number, number][] | null };
     const data: { championship: { title: string; description: string; status: string }; tables: Group[]; matches: Match[] } =
       await load(`/api/meisterschaften/${encodeURIComponent(id)}`);
     status.textContent = phases[data.championship.status] ?? 'Entwurf';
@@ -61,6 +62,16 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     back.href = '/meisterschaften/';
     detail.append(back, make('h2', data.championship.title, 'text-3xl font-bold break-words'));
     if (data.championship.description) detail.append(make('p', data.championship.description, 'max-w-prose text-[#4c5d52]'));
+    const finals = data.matches.filter(match => match.phase === 2 && match.bracket_position !== null);
+    const lastRound = Math.max(0, ...finals.map(match => match.round));
+    const final = finals.find(match => match.round === lastRound && match.bracket_position === 1);
+    const champion = final?.winner ? (final.winner === final.home ? final.home_name : final.away_name) : null;
+    if (champion && data.championship.status === 'finished') {
+      const winner = make('div', '', 'rounded-xl bg-[#173a2e] p-5 text-white');
+      winner.append(make('p', 'Turniersieger', 'text-sm font-semibold'), make('p', champion, 'mt-2 text-2xl font-bold'));
+      detail.append(winner);
+    }
+    const tables = make('div', '', 'grid gap-4 sm:grid-cols-2 lg:grid-cols-3');
     for (const group of data.tables) {
       const card = make('section', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6');
       card.append(make('h3', `${group.phase === 1 ? 'Vorrunde' : 'Platzierungsrunde'} · ${group.name}`, 'text-lg font-bold'));
@@ -72,15 +83,26 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         list.append(item);
       }
       card.append(list);
-      detail.append(card);
+      tables.append(card);
     }
+    if (data.tables.length) detail.append(make('h3', 'Gruppentabellen', 'text-xl font-bold'), tables);
     if (data.matches.length) {
-      const list = make('ul', '', 'divide-y divide-[#d9dbd0]');
-      for (const match of data.matches) {
-        const score = match.score?.map(set => set.join(':')).join(', ') ?? 'Offen';
-        list.append(make('li', `${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'} · ${score}`, 'py-3 break-words'));
+      const roundOne = data.matches.filter(match => match.phase === 1);
+      const roundTwo = data.matches.filter(match => match.phase === 2);
+      detail.append(make('h3', 'Spielplan', 'text-xl font-bold'));
+      for (const [title, matches] of [[finals.length ? 'K.-o.-Runde' : 'Platzierungsrunde', roundTwo], ['Vorrunde', roundOne]] as const) {
+        if (!matches.length) continue;
+        const list = make('ul', '', 'divide-y divide-[#d9dbd0]');
+        for (const match of matches) {
+          const score = match.score?.map(set => set.join(':')).join(', ') ?? (match.winner ? 'Freilos' : 'Offen');
+          const label = match === final ? 'Finale · ' : (finals.includes(match) && match.round === lastRound ? 'Spiel um Platz 3 · ' : '');
+          list.append(make('li', `${label}${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'} · ${score}`, 'py-3 break-words'));
+        }
+        const section = make('details', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4');
+        section.open = matches === roundTwo || !roundTwo.length;
+        section.append(make('summary', `${title} · ${matches.length} Begegnungen`, 'cursor-pointer font-semibold'), list);
+        detail.append(section);
       }
-      detail.append(make('h3', 'Spielplan', 'text-xl font-bold'), list);
     }
     detail.hidden = false;
   }

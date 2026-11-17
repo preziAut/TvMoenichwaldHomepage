@@ -21,14 +21,18 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       </form>
       <div id="setup" hidden class="space-y-4 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 id="draft-title" class="text-xl font-bold"></h2>
+        <form id="reuse-player">
+          <label>Vorhandenen Kontakt auswählen<select id="available-players" name="playerId" required class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"></select></label>
+          <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white disabled:opacity-50">Kontakt zur Meisterschaft hinzufügen</button>
+        </form>
         <form id="player">
-          <h3 class="mb-3 font-semibold">Teilnehmer hinzufügen</h3>
+          <h3 class="mb-3 font-semibold">Neuen Kontakt anlegen</h3>
           <label>Vorname<input name="firstName" required maxlength="70" /></label>
           <label>Nachname<input name="lastName" required maxlength="70" /></label>
           <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Teilnehmer hinzufügen</button>
         </form>
         <form id="seeds">
-          <fieldset><legend class="mb-3 font-semibold">Setzliste</legend><div id="seed-rows"></div></fieldset>
+          <fieldset><legend class="mb-3 font-semibold">Setzliste <span id="participant-count" class="font-normal"></span></legend><div id="seed-rows"></div></fieldset>
           <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Setzliste speichern</button>
         </form>
         <form id="draw">
@@ -98,7 +102,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   const results = document.querySelector<HTMLElement>('#result-list')!;
   type Summary = { id: string; title: string; version: number; status: string };
   type Entry = { id: string; display_name: string; seed: number | null };
+  type Contact = { id: string; display_name: string; active: number };
   let entries: Entry[] = [];
+  let contacts: Contact[] = [];
   let draft: { id: string; version: number } | null = null;
   let suggested: { groupCount: number; seed: number; groups?: string[][]; reason?: string } | null = null;
 
@@ -168,6 +174,8 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   };
 
   function renderSeeds() {
+    document.querySelector('#participant-count')!.textContent = `(${entries.length})`;
+    renderAvailableContacts();
     seedRows.replaceChildren(...entries.map(entry => {
       const label = document.createElement('label');
       label.textContent = entry.display_name;
@@ -185,6 +193,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       label.append(input);
       return label;
     }));
+  }
+  function renderAvailableContacts() {
+    const available = contacts.filter(contact => contact.active && !entries.some(entry => entry.id === contact.id));
+    const select = document.querySelector<HTMLSelectElement>('#available-players')!;
+    select.replaceChildren(new Option(available.length ? 'Bitte auswählen' : 'Keine weiteren aktiven Kontakte', ''),
+      ...available.map(contact => new Option(contact.display_name, contact.id)));
+    document.querySelector<HTMLButtonElement>('#reuse-player button')!.disabled = available.length === 0;
   }
   manualToggle.onchange = () => {
     manualGroups.hidden = !manualToggle.checked;
@@ -221,7 +236,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     document.querySelector<HTMLInputElement>('#player input[name="firstName"]')?.focus();
     await listCompetitions();
   });
-  bind('player', async fields => {
+  async function addParticipant(fields: FormData) {
     if (!draft) return;
     draft = await post(`/${draft.id}/teilnehmer`, { ...Object.fromEntries(fields), version: draft.version });
     const response = await fetch(`/api/meisterschaften/${encodeURIComponent(draft!.id)}/teilnehmer`);
@@ -230,7 +245,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     start.hidden = true;
     preview.replaceChildren();
     status.textContent = 'Teilnehmer hinzugefügt.';
-  });
+  }
+  bind('reuse-player', addParticipant);
+  bind('player', async fields => { await addParticipant(fields); await loadAccounts(); });
   bind('seeds', async fields => {
     if (!draft) return;
     const selected = [...fields].filter(([, value]) => value !== '');
@@ -307,7 +324,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     const response = await fetch('/api/meisterschaft-konten');
     if (!response.ok) return;
     const { accounts, players }: { accounts: { email: string; verified: number | null; active: number }[];
-      players: { id: string; display_name: string; active: number }[] } = await response.json();
+      players: Contact[] } = await response.json();
+    contacts = players;
+    renderAvailableContacts();
     document.querySelector('#accounts')!.replaceChildren(new Option('Bitte auswählen', ''), ...accounts.map(account =>
       new Option(`${account.email}${!account.verified ? ' · unbestätigt' : !account.active ? ' · gesperrt' : ''}`, account.email)));
     document.querySelector('#players')!.replaceChildren(new Option('Bitte auswählen', ''), ...players.filter(player => player.active).map(player =>

@@ -49,6 +49,9 @@ export async function onRequest({ request, env }: { request: Request; env: Bindi
     return reply(detail);
   } catch (error) {
     if (error instanceof AdminInputError) return reply({ error: error.message }, 422);
+    if (error instanceof Error && error.message.includes('UNIQUE constraint failed: championship_players.contact_key')) {
+      return reply({ error: 'Diesen Kontakt gibt es bereits. Bitte den vorhandenen Kontakt auswählen.' }, 409);
+    }
     if (error instanceof Error && error.message.includes('CHECK constraint failed: passed')) return reply({ error: 'Der Entwurf oder deine Berechtigung wurde geändert.' }, 409);
     return reply({ error: 'Meisterschaftsdaten konnten nicht geladen werden.' }, 503);
   }

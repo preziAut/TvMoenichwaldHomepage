@@ -9,7 +9,7 @@ import { championshipSessions } from '../championships/server/sessions.ts';
 for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship through the ${phaseTwo} phase`, async () => {
   const sqlite = new DatabaseSync(':memory:');
   try {
-    for (const file of ['0001_competition.sql', '0002_sessions.sql']) sqlite.exec(readFileSync(
+    for (const file of ['0001_competition.sql', '0002_sessions.sql', '0005_contact_keys.sql']) sqlite.exec(readFileSync(
       new URL(`../championships/migrations/${file}`, import.meta.url), 'utf8'));
     const db = { prepare: sql => ({ bind: (...args) => ({
       first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -47,6 +47,12 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
       await ok(competitions, `${base}/teilnehmer`, { cookie: admin, data: { version, firstName, lastName: 'Test' } });
     }
     const entrants = sqlite.prepare('SELECT id FROM championship_players ORDER BY first_name').all();
+    const duplicate = await call(competitions, `${base}/teilnehmer`, { cookie: admin,
+      data: { version: 2, firstName: '  ERIKA ', lastName: 'test' } });
+    assert.equal(duplicate.status, 422);
+    const reused = await ok(competitions, 'meisterschaften', { cookie: admin, data: { ...data, title: 'Wiederverwendung' } });
+    await ok(competitions, `meisterschaften/${reused.id}/teilnehmer`, { cookie: admin, data: { version: 0, playerId: entrants[0].id } });
+    assert.equal(sqlite.prepare('SELECT count(*) AS total FROM championship_players').get().total, 2);
     const link = sqlite.prepare("INSERT INTO championship_player_links (user_id,player_id,approved_by,can_submit) VALUES (?,?,'admin',1)");
     link.run('one', entrants[0].id);
     link.run('two', entrants[1].id);
