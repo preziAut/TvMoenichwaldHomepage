@@ -42,7 +42,7 @@ try {
   await page.getByLabel('Anzahl Gruppen').fill('5');
   await page.getByRole('button', { name: 'Auslosung ansehen' }).click();
   await page.locator('#preview li').nth(4).waitFor();
-  await page.locator('#start').getByLabel('Meisterschaft veröffentlichen').check();
+  await page.locator('#start').getByLabel('Spielplan und Ergebnisse ab Start freigeben').check();
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Vorrunde starten' }).click();
   await page.getByText('Vorrunde gestartet. Die Ergebnisse können jetzt eingetragen werden.').waitFor();

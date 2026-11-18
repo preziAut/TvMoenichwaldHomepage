@@ -7,10 +7,10 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   <SectionContainer aria-labelledby="title">
     <a href="/turniere/" class="text-sm font-semibold underline underline-offset-4">Alle Turniere</a>
     <h1 id="title" class="mt-4 font-['Instrument_Serif',Georgia,serif] text-5xl text-[#173a2e] sm:text-6xl">Einzelmeisterschaften</h1>
-    <div class="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-sm font-semibold">
-      <a class="underline underline-offset-4" href="/meisterschaften/anmelden/">Anmelden</a>
+    <div class="mt-4 flex flex-wrap items-center gap-3 text-sm font-semibold">
+      <a id="championship-login" class="inline-flex min-h-11 items-center rounded-lg bg-[#173a2e] px-4 py-2 text-white!" href="/meisterschaften/anmelden/">Vereinslogin · Anmelden</a>
       <a class="underline underline-offset-4" href="/meisterschaften/meine-spiele/">Meine Spiele</a>
-      <a class="underline underline-offset-4" href="/meisterschaften/admin/">Verwaltung</a>
+      <a id="championship-admin" hidden class="underline underline-offset-4" href="/meisterschaften/admin/">Verwaltung</a>
     </div>
     <p id="status" class="mt-5 text-sm" role="status">Meisterschaften werden geladen …</p>
     <ul id="events" class="mt-6 grid gap-3 sm:grid-cols-2"></ul>
@@ -168,4 +168,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   }
 
   render().catch(() => { status.textContent = 'Die Meisterschaftsdaten sind derzeit nicht verfügbar.'; });
+  load('/api/meisterschaft-session').then(({ role }) => {
+    if (role === 'admin') {
+      const admin = document.querySelector<HTMLAnchorElement>('#championship-admin')!;
+      const id = new URLSearchParams(location.search).get('id');
+      if (id) admin.href += `?id=${encodeURIComponent(id)}`;
+      admin.hidden = false;
+    }
+    if (role) document.querySelector('#championship-login')!.textContent = 'Vereinskonto';
+  }).catch(() => {});
 </script>

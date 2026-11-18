@@ -36,7 +36,7 @@ try {
   }
   await page.getByLabel('Anzahl Gruppen').fill('1');
   await page.getByRole('button', { name: 'Auslosung ansehen' }).click();
-  await page.locator('#start').getByLabel('Meisterschaft veröffentlichen').check();
+  await page.locator('#start').getByLabel('Spielplan und Ergebnisse ab Start freigeben').check();
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Vorrunde starten' }).click();
   await page.getByRole('heading', { name: 'Begegnungen und Ergebnisse' }).waitFor();

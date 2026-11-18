@@ -33,7 +33,7 @@ export function publicChampionshipReader(db: QueryDatabase, actor: Actor | null 
     return (await db.prepare(sql).bind(...values).all<T>()).results;
   }
   const admin = actor?.active && actor.role === 'admin';
-  const fields = `id, title, season, description, status, phase_two, starts_on, ends_on${admin ? ', version' : ''}`;
+  const fields = `id, title, season, description, status, phase_two, starts_on, ends_on${admin ? ', version, visibility, published, allow_submissions' : ''}`;
   const visible = actor?.active && actor.role === 'admin' ? '1=1' :
     `status <> 'draft' AND published = 1${actor?.active ? '' : " AND visibility = 'public'"}`;
 

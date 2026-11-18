@@ -41,7 +41,34 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
     return { id: championshipId, version: 0 };
   }
 
-  const championship = await statement('SELECT version,status FROM championships WHERE id=?', id).first<{ version: number; status: string }>();
+  const championship = await statement('SELECT version,status,phase_two FROM championships WHERE id=?', id)
+    .first<{ version: number; status: string; phase_two: string }>();
+  if (operation === 'einstellungen') {
+    if (!championship || body.version !== championship.version) throw new AdminInputError('Die Meisterschaft wurde geändert. Bitte lade sie erneut.');
+    const title = string(body.title, 120);
+    const start = string(body.startsOn, 10);
+    const end = body.endsOn ? string(body.endsOn, 10) : null;
+    const description = string(body.description, 2000);
+    const { phaseTwo, visibility, published, allowSubmissions } = body;
+    if (!title || !date(start) || (end !== null && (!date(end) || end < start)) ||
+      (phaseTwo !== 'placement' && phaseTwo !== 'knockout') || (visibility !== 'public' && visibility !== 'club') ||
+      typeof published !== 'boolean' || typeof allowSubmissions !== 'boolean') invalid('Bitte prüfe die Meisterschaftseinstellungen.');
+    if (championship.status === 'draft' && published) invalid('Ein Entwurf wird erst nach dem Start der Vorrunde sichtbar.');
+    if (!['draft', 'groups_active'].includes(championship.status) && phaseTwo !== championship.phase_two) {
+      invalid('Das Format kann nach dem Start der Folgephase nicht mehr geändert werden.');
+    }
+    const guard = crypto.randomUUID();
+    await db.batch([
+      statement(`INSERT INTO championship_write_preconditions SELECT ?, EXISTS (
+        SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=?
+          AND u.user_id=? AND u.role='admin' AND u.active=1)`, guard, id, championship.version, actorId),
+      statement(`UPDATE championships SET title=?,season=?,description=?,starts_on=?,ends_on=?,phase_two=?,visibility=?,published=?,
+        allow_submissions=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?`, title, Number(start.slice(0, 4)), description,
+        start, end, phaseTwo as string, visibility as string, Number(published), Number(allowSubmissions), id),
+      statement('DELETE FROM championship_write_preconditions WHERE id=?', guard),
+    ]);
+    return { id, version: championship.version + 1 };
+  }
   if (!championship || championship.status !== 'draft' || body.version !== championship.version) {
     invalid('Dieser Entwurf wurde geändert oder bereits gestartet.');
   }

@@ -7,7 +7,12 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     <a href="/meisterschaften/" class="text-sm font-semibold underline underline-offset-4">Einzelmeisterschaften</a>
     <h1 id="title" class="my-4 text-4xl font-bold text-[#173a2e]">Meisterschaften verwalten</h1>
     <p id="admin-status" role="status" class="my-4 text-sm"></p>
-    <p class="my-4"><a class="text-sm font-semibold underline" href="/meisterschaften/anmelden/">Zum Vereinslogin</a></p>
+    <section id="admin-login" class="my-5 max-w-xl rounded-xl border border-[#d9dbd0] bg-white p-5" aria-labelledby="admin-login-title">
+      <h2 id="admin-login-title" class="text-xl font-bold">Vereinslogin</h2>
+      <p class="my-3">Melde dich mit einem Admin-Konto an, um Meisterschaften zu verwalten.</p>
+      <a id="admin-login-link" class="inline-flex min-h-11 items-center rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white!" href="/meisterschaften/anmelden/">Als Admin anmelden</a>
+    </section>
+    <div id="admin-workspace" hidden>
     <label id="existing-label" hidden>Vorhandene Meisterschaft öffnen<select id="existing" class="mt-2 block w-full max-w-lg rounded-lg border border-[#9fa995] p-3"><option value="">Bitte auswählen</option></select></label>
     <button id="new-draft" type="button" hidden class="mb-4 min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Neue Meisterschaft</button>
     <div class="grid gap-5 lg:grid-cols-2">
@@ -18,6 +23,22 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         <label>Folgephase<select name="phaseTwo" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="placement">Platzierungsgruppen</option><option value="knockout">K.-o.-Runde</option></select></label>
         <label>Sichtbarkeit<select name="visibility" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="club">Vereinsintern</option><option value="public">Öffentlich</option></select></label>
         <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Entwurf anlegen</button>
+      </form>
+      <form id="championship-settings" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+        <h2 class="mb-4 text-xl font-bold">Meisterschaftseinstellungen</h2>
+        <label>Titel<input name="title" required maxlength="120" /></label>
+        <label>Beschreibung<textarea name="description" maxlength="2000" rows="3"></textarea></label>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <label>Beginn<input name="startsOn" type="date" required /></label>
+          <label>Ende (optional)<input name="endsOn" type="date" /></label>
+        </div>
+        <label>Folgephase<select name="phaseTwo" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="placement">Platzierungsgruppen</option><option value="knockout">K.-o.-Runde</option></select></label>
+        <label>Sichtbarkeit<select name="visibility" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="club">Vereinsintern</option><option value="public">Öffentlich</option></select></label>
+        <label><input name="published" type="checkbox" /> Spielplan und Ergebnisse freigeben</label>
+        <p class="mb-4 text-sm text-[#4c5d52]">Öffentlich: für alle sichtbar. Vereinsintern: nur für angemeldete Mitglieder. Ohne Freigabe sehen nur Admins die Meisterschaft. Entwürfe bleiben bis zum Start verborgen.</p>
+        <label><input name="allowSubmissions" type="checkbox" /> Ergebnismeldungen durch Spieler zulassen</label>
+        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Einstellungen speichern</button>
+        <p id="settings-status" role="status" class="mt-2 text-sm"></p>
       </form>
       <div id="setup" hidden class="space-y-4 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 id="draft-title" class="text-xl font-bold"></h2>
@@ -44,7 +65,8 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         </form>
         <ol id="preview" class="space-y-2"></ol>
         <form id="start" hidden>
-          <label><input name="publish" type="checkbox" /> Meisterschaft veröffentlichen</label>
+          <label><input name="publish" type="checkbox" /> Spielplan und Ergebnisse ab Start freigeben</label>
+          <p class="mb-4 text-sm text-[#4c5d52]">Die gewählte Sichtbarkeit gilt. Du kannst die Freigabe später ändern.</p>
           <label><input name="allowSubmissions" type="checkbox" /> Ergebnismeldung durch Spieler zulassen</label>
           <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Vorrunde starten</button>
         </form>
@@ -83,6 +105,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         </div>
       </form>
     </div>
+    </div>
   </SectionContainer>
 </Layout>
 
@@ -100,10 +123,14 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   const manualToggle = document.querySelector<HTMLInputElement>('#manual-toggle')!;
   const manualGroups = document.querySelector<HTMLElement>('#manual-groups')!;
   const createForm = document.querySelector<HTMLFormElement>('#create')!;
+  const settings = document.querySelector<HTMLFormElement>('#championship-settings')!;
+  const settingsStatus = document.querySelector('#settings-status')!;
   const newDraft = document.querySelector<HTMLButtonElement>('#new-draft')!;
   const resultPanel = document.querySelector<HTMLElement>('#result-panel')!;
   const results = document.querySelector<HTMLElement>('#result-list')!;
   type Summary = { id: string; title: string; version: number; status: string };
+  type Settings = Summary & { description: string; starts_on: string; ends_on: string | null; phase_two: string;
+    visibility: string; published: number; allow_submissions: number };
   type Entry = { id: string; display_name: string; seed: number | null };
   type Contact = { id: string; display_name: string; active: number };
   let entries: Entry[] = [];
@@ -152,12 +179,33 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     results.replaceChildren();
     history.replaceState(null, '', `?id=${encodeURIComponent(item.id)}`);
     document.querySelector('#draft-title')!.textContent = item.title;
+    settings.hidden = true;
+    await loadSettings(item.id);
     if (item.status === 'draft') {
       const response = await fetch(`/api/meisterschaften/${encodeURIComponent(item.id)}/teilnehmer`);
       if (!response.ok) throw new Error('Teilnehmer konnten nicht geladen werden.');
       entries = await response.json();
       renderSeeds();
     } else await loadResults(item.id);
+  }
+
+  async function loadSettings(id: string) {
+    const response = await fetch(`/api/meisterschaften/${encodeURIComponent(id)}`);
+    if (!response.ok) throw new Error('Einstellungen konnten nicht geladen werden.');
+    const { championship }: { championship: Settings } = await response.json();
+    if (draft?.id !== id) return;
+    const field = (key: string) => settings.elements.namedItem(key) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+    for (const [key, value] of Object.entries({ title: championship.title, description: championship.description,
+      startsOn: championship.starts_on, endsOn: championship.ends_on ?? '', phaseTwo: championship.phase_two, visibility: championship.visibility })) {
+      field(key).value = value;
+    }
+    const published = field('published') as HTMLInputElement;
+    published.checked = Boolean(championship.published);
+    published.disabled = championship.status === 'draft';
+    (field('allowSubmissions') as HTMLInputElement).checked = Boolean(championship.allow_submissions);
+    (field('phaseTwo') as HTMLSelectElement).disabled = !['draft', 'groups_active'].includes(championship.status);
+    (start.elements.namedItem('allowSubmissions') as HTMLInputElement).checked = Boolean(championship.allow_submissions);
+    settings.hidden = false;
   }
 
   async function loadResults(id: string) {
@@ -172,7 +220,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
 
   newDraft.onclick = () => {
     draft = null;
-    setup.hidden = true; phaseForm.hidden = true; resultPanel.hidden = true;
+    setup.hidden = true; phaseForm.hidden = true; resultPanel.hidden = true; settings.hidden = true;
     newDraft.hidden = true; createForm.hidden = false;
     existing.value = '';
     history.replaceState(null, '', location.pathname);
@@ -253,6 +301,25 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     status.textContent = 'Teilnehmer hinzugefügt.';
   }
   bind('reuse-player', addParticipant);
+  bind('championship-settings', async fields => {
+    if (!draft) return;
+    const id = draft.id;
+    settingsStatus.textContent = '';
+    try {
+      const saved = await post(`/${id}/einstellungen`, { ...Object.fromEntries(fields), version: draft.version,
+        phaseTwo: (settings.elements.namedItem('phaseTwo') as HTMLSelectElement).value,
+        published: fields.has('published'), allowSubmissions: fields.has('allowSubmissions') });
+      if (draft?.id !== id) return;
+      draft.version = saved.version;
+      knockoutSlots = undefined;
+      knockoutPreview.replaceChildren();
+      document.querySelector('#phase-preview')!.textContent = '';
+      document.querySelector('#draft-title')!.textContent = String(fields.get('title'));
+      await loadSettings(id);
+      await listCompetitions();
+      settingsStatus.textContent = 'Einstellungen gespeichert.';
+    } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Speichern fehlgeschlagen.'; }
+  });
   bind('player', async fields => { await addParticipant(fields); await loadAccounts(); });
   bind('seeds', async fields => {
     if (!draft) return;
@@ -439,6 +506,16 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     status.textContent = 'Konto aktualisiert.';
     await loadAccounts();
   });
-  listCompetitions().catch(() => {});
-  loadAccounts().catch(() => {});
+  const returnId = new URLSearchParams(location.search).get('id');
+  if (returnId) document.querySelector<HTMLAnchorElement>('#admin-login-link')!.href = `/meisterschaften/anmelden/?meisterschaft=${encodeURIComponent(returnId)}`;
+  async function openAdminWorkspace() {
+    const response = await fetch('/api/meisterschaft-session');
+    if (!response.ok) throw new Error('Die Anmeldung konnte nicht geprüft werden.');
+    const { role } = await response.json();
+    if (role !== 'admin') return;
+    document.querySelector<HTMLElement>('#admin-login')!.hidden = true;
+    document.querySelector<HTMLElement>('#admin-workspace')!.hidden = false;
+    await Promise.all([listCompetitions(), loadAccounts()]);
+  }
+  openAdminWorkspace().catch(error => { status.textContent = error.message; });
 </script>

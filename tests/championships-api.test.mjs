@@ -85,5 +85,16 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     }
     await ok(competitions, `${base}/abschliessen`, { cookie: admin, data: { version: 4, confirm: true } });
     assert.equal((await ok(competitions, base)).championship.status, 'finished');
+    const settings = { version: 5, title: 'Neuer Titel', startsOn: '2026-11-18', endsOn: '2026-11-20',
+      phaseTwo, visibility: 'club', published: true, allowSubmissions: false, description: 'Bearbeitet' };
+    assert.equal((await call(competitions, `${base}/einstellungen`, { cookie: one, data: settings })).status, 403);
+    await ok(competitions, `${base}/einstellungen`, { cookie: admin, data: settings });
+    assert.equal((await call(competitions, base)).status, 404);
+    const after = await ok(competitions, base, { cookie: admin });
+    assert.equal(after.championship.title, 'Neuer Titel');
+    assert.equal(after.championship.visibility, 'club');
+    assert.equal((await call(competitions, `${base}/einstellungen`, { cookie: admin, data: settings })).status, 422);
+    assert.equal((await call(competitions, `${base}/einstellungen`, { cookie: admin,
+      data: { ...settings, version: 6, phaseTwo: phaseTwo === 'knockout' ? 'placement' : 'knockout' } })).status, 422);
   } finally { sqlite.close(); }
 });
