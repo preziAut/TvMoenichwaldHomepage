@@ -31,7 +31,7 @@ export async function saveGroupResult<Statement>(db: Database<Statement>, actor:
       WHERE m.id=? AND m.championship_id=? AND m.phase=? AND m.version=?
         AND m.home=? AND m.away=?
         AND c.deleted_at IS NULL AND s.kind=? AND u.active=1 AND u.role=?
-        AND (s.status='active' OR (?='correct' AND u.role='admin' AND s.status='closed'
+        AND ((s.status='active' AND c.status IN ('groups_active','phase_active')) OR (?='correct' AND u.role='admin' AND s.status='closed'
           AND m.status='confirmed' AND c.status IN ('finished','archived')))
         AND (u.role='admin' OR (c.published=1 AND c.allow_submissions=1 AND l.can_submit=1
           AND l.player_id=? AND p.active=1 AND l.player_id IN (m.home,m.away)))
@@ -47,7 +47,9 @@ export async function saveGroupResult<Statement>(db: Database<Statement>, actor:
     batch.push(statement(`INSERT INTO championship_write_preconditions SELECT ?, NOT EXISTS (
       SELECT 1 FROM json_each(?) j LEFT JOIN championship_matches m ON m.id=j.value->>'id'
       WHERE m.version IS NOT j.value->>'version')`, bracketGuard, snapshot));
-    if (next.status === 'confirmed' || next.status === 'open') {
+    if ('proposal' in next && next.status === 'confirmed') {
+      reconcileKnockout(bracket.map(fixture => fixture.id === match.id ? { ...fixture, winner: next.proposedWinner ?? null } : fixture));
+    } else if (next.status === 'confirmed' || next.status === 'open') {
       const reconciled = reconcileKnockout(bracket.map(fixture => fixture.id !== match.id ? fixture : {
         ...fixture, state: next.status, winner: next.status === 'confirmed' ? next.winner : null,
       }));
@@ -61,28 +63,35 @@ export async function saveGroupResult<Statement>(db: Database<Statement>, actor:
     batch.push(statement('DELETE FROM championship_write_preconditions WHERE id=?', bracketGuard));
   }
 
-  if (next.status === 'submitted') {
+  const proposal = 'proposal' in next ? next.proposal : next.status === 'submitted' ? next.score : null;
+  if (proposal) {
+    batch.push(statement(`UPDATE championship_submissions SET status='superseded',resolved_by=?,resolved_at=CURRENT_TIMESTAMP
+      WHERE match_id=? AND status='pending'`, actor.userId, match.id));
     batch.push(statement(`INSERT INTO championship_submissions
       (id,match_id,match_version,submitted_by,submitted_as_player,score,status)
       VALUES (?,?,?,?,?,?,'pending')`, crypto.randomUUID(), match.id, next.version, actor.userId,
-    actor.playerId, JSON.stringify(next.score)));
+    actor.playerId, JSON.stringify(proposal)));
   } else {
     const submissionState = action.kind === 'confirm' ? 'confirmed' : action.kind === 'dispute' ? 'disputed' : 'superseded';
     batch.push(statement(`UPDATE championship_submissions SET status=?, resolved_by=?, resolved_at=CURRENT_TIMESTAMP
       WHERE match_id=? AND status='pending'`, submissionState, actor.userId, match.id));
     batch.push(statement('DELETE FROM championship_match_sets WHERE match_id=?', match.id));
-    if (next.status === 'confirmed') {
+    if (next.status === 'confirmed' && 'score' in next) {
       next.score.forEach(([home, away], index) => batch.push(statement(`INSERT INTO championship_match_sets
         (match_id,set_number,home_games,away_games) VALUES (?,?,?,?)`, match.id, index + 1, home, away)));
     }
   }
-  batch.push(statement(`UPDATE championship_matches SET status=?, winner=?, version=?, updated_at=CURRENT_TIMESTAMP
-    WHERE id=?`, next.status, next.status === 'confirmed' ? next.winner : null, next.version, match.id));
+  if (proposal && next.status === 'confirmed') {
+    batch.push(statement(`UPDATE championship_matches SET version=?,updated_at=CURRENT_TIMESTAMP WHERE id=?`, next.version, match.id));
+  } else {
+    batch.push(statement(`UPDATE championship_matches SET status=?, winner=?, version=?, updated_at=CURRENT_TIMESTAMP
+      WHERE id=?`, next.status, next.status === 'confirmed' && 'winner' in next ? next.winner : null, next.version, match.id));
+  }
   batch.push(statement(`INSERT INTO championship_result_audit
     (id,match_id,actor_id,action,previous_value,new_value,reason) VALUES (?,?,?,?,?,?,?)`,
   crypto.randomUUID(), match.id, actor.userId, action.kind,
   JSON.stringify({ status: match.status, version: match.version, score: match.score ?? match.submission?.score ?? null }),
-  JSON.stringify(next), 'reason' in action ? action.reason.trim() : null));
+  JSON.stringify(proposal ? { status: 'submitted', version: next.version, score: proposal } : next), 'reason' in action ? action.reason.trim() : null));
   batch.push(statement('DELETE FROM championship_write_preconditions WHERE id=?', batchId));
   await db.batch(batch);
   return next;

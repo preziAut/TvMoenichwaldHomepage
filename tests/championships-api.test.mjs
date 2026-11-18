@@ -4,6 +4,7 @@ import { DatabaseSync } from 'node:sqlite';
 import test from 'node:test';
 import { onRequest as competitions } from '../functions/api/meisterschaften/[[path]].ts';
 import { onRequest as results } from '../functions/api/spiele/[[path]].ts';
+import { onRequest as myMatches } from '../functions/api/meine-spiele.ts';
 import { championshipSessions } from '../championships/server/sessions.ts';
 
 for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship through the ${phaseTwo} phase`, async () => {
@@ -71,6 +72,19 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     assert.deepEqual(confirmed.matches[0].score, score);
     assert.equal(confirmed.tables[0].rows[0].wins, 1);
     const phaseData = { version: 3, qualifiers: 2 };
+    const revised = [[6, 1], [6, 4]];
+    const propose = `spiele/${match.id}/korrektur-vorschlagen`;
+    assert.equal((await ok(myMatches, 'meine-spiele', { cookie: one }))[0].action, 'correct');
+    await ok(results, propose, { cookie: one, data: { version: 2, score: revised, reason: 'Zählfehler im ersten Satz' } });
+    assert.equal((await ok(myMatches, 'meine-spiele', { cookie: two }))[0].action, 'review');
+    assert.deepEqual((await ok(competitions, base)).matches[0].score, score);
+    assert.equal((await call(competitions, `${base}/folgephase/vorschau`, { cookie: admin, data: phaseData })).status, 422);
+    assert.equal((await call(results, `spiele/${match.id}/bestaetigen`, { cookie: one, data: { version: 3 } })).status, 403);
+    await ok(results, `spiele/${match.id}/beanstanden`, { cookie: two, data: { version: 3 } });
+    assert.deepEqual((await ok(competitions, base)).matches[0].score, score);
+    await ok(results, propose, { cookie: two, data: { version: 4, score: revised, reason: 'Korrektur gemeinsam geprüft' } });
+    await ok(results, `spiele/${match.id}/bestaetigen`, { cookie: one, data: { version: 5 } });
+    assert.deepEqual((await ok(competitions, base)).matches[0].score, revised);
     const second = await ok(competitions, `${base}/folgephase/vorschau`, { cookie: admin, data: phaseData });
     if (phaseTwo === 'placement') assert.deepEqual(second.positions.map(group => group.length), [1, 1]);
     else assert.equal(second.bracket.length, 1);
@@ -85,6 +99,8 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     }
     await ok(competitions, `${base}/abschliessen`, { cookie: admin, data: { version: 4, confirm: true } });
     assert.equal((await ok(competitions, base)).championship.status, 'finished');
+    assert.equal((await call(results, propose, { cookie: one, data: { version: 6, score, reason: 'Späte Änderung' } })).status, 409);
+    assert.ok((await ok(myMatches, 'meine-spiele', { cookie: one })).every(match => match.action === null));
     const settings = { version: 5, title: 'Neuer Titel', startsOn: '2026-11-18', endsOn: '2026-11-20',
       phaseTwo, visibility: 'club', published: true, allowSubmissions: false, description: 'Bearbeitet' };
     assert.equal((await call(competitions, `${base}/einstellungen`, { cookie: one, data: settings })).status, 403);

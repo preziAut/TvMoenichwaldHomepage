@@ -20,7 +20,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   const labels: Record<string, string> = { open: 'Offen', submitted: 'Wartet auf Bestätigung', disputed: 'Strittig',
     confirmed: 'Bestätigt', completed: 'Abgeschlossen' };
   type Match = { id: string; version: number; status: string; title: string; home: string | null; away: string | null;
-    proposedScore: string | null; action: 'review' | 'submit' | null };
+    officialScore?: string | null; proposedScore: string | null; action: 'review' | 'submit' | 'correct' | null };
   const element = <K extends keyof HTMLElementTagNameMap>(tag: K, label: string, classes: string) => {
     const node = document.createElement(tag);
     node.textContent = label;
@@ -29,12 +29,12 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   };
   const buttonClasses = championshipButton.primary;
 
-  async function change(match: Match, action: string, error: HTMLElement, button: HTMLButtonElement, score?: number[][]) {
+  async function change(match: Match, action: string, error: HTMLElement, button: HTMLButtonElement, score?: number[][], reason?: string) {
     button.disabled = true;
     error.textContent = '';
     try {
       const response = await fetch(`/api/spiele/${encodeURIComponent(match.id)}/${action}`, { method: 'POST',
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: match.version, score }) });
+        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: match.version, score, reason }) });
       if (!response.ok) {
         const result = await response.json();
         throw new Error(result.error ?? 'Speichern fehlgeschlagen.');
@@ -49,10 +49,17 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     card.append(element('p', match.title, 'text-sm text-[#4c5d52]'),
       element('h2', `${match.home ?? 'Offen'} – ${match.away ?? 'Offen'}`, 'mt-2 text-lg font-bold break-words'),
       element('p', labels[match.status] ?? '', 'my-3 text-sm font-semibold'));
+    const formatScore = (score: number[][]) => score.map(set => set.join(':')).join(', ');
+    const official: number[][] | null = match.officialScore ? JSON.parse(match.officialScore) : null;
+    if (official?.length) card.append(element('p', `Bestätigtes Ergebnis: ${formatScore(official)}`, 'mb-3 text-sm font-semibold'));
+    if (match.proposedScore && match.status === 'confirmed') card.append(element('p', 'Korrektur wartet auf Bestätigung.', 'mb-3 text-sm'));
     const error = element('p', '', 'mt-2 text-sm text-red-800');
     error.setAttribute('role', 'status');
-    if (match.action === 'submit') {
+    if (match.action === 'submit' || match.action === 'correct') {
+      const correcting = match.action === 'correct';
+      const prefill: number[][] | null = match.proposedScore ? JSON.parse(match.proposedScore) : official;
       const form = element('form', '', 'grid gap-2');
+      form.method = 'post';
       const sets: HTMLInputElement[][] = [];
       for (let set = 1; set <= 3; set++) {
         const field = element('fieldset', '', 'grid grid-cols-2 gap-2');
@@ -61,21 +68,37 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
           const label = element('label', player ?? `Spieler ${index + 1}`, 'min-w-0! mb-1! break-words');
           const input = element('input', '', 'min-h-11 rounded-lg');
           input.type = 'number'; input.min = '0'; input.max = '7'; input.inputMode = 'numeric'; input.required = set < 3;
+          input.value = prefill?.[set - 1]?.[index]?.toString() ?? '';
           label.append(input); field.append(label); return input;
         });
         sets.push(inputs);
         form.append(field);
       }
-      const submit = element('button', 'Ergebnis melden', buttonClasses);
+      const reason = element('input', '', 'min-h-11 rounded-lg');
+      if (correcting) {
+        const label = element('label', 'Grund der Korrektur', 'mb-1!');
+        reason.required = true;
+        reason.maxLength = 500;
+        label.append(reason);
+        form.append(label);
+      }
+      const submit = element('button', correcting ? 'Korrektur vorschlagen' : 'Ergebnis melden', buttonClasses);
       form.append(submit);
       form.addEventListener('submit', event => {
         event.preventDefault();
         const entered = sets.filter(set => set.some(input => input.value !== ''));
-        if (entered.some(set => set.some(input => input.value === ''))) { error.textContent = 'Bitte beide Satzstände eintragen.'; return; }
+        if (entered.some((set, index) => set !== sets[index] || set.some(input => input.value === ''))) { error.textContent = 'Bitte die Satzstände der Reihe nach vollständig eintragen.'; return; }
         const score = entered.map(set => set.map(input => Number(input.value)));
-        if (confirm(`Ergebnis ${score.map(set => set.join(':')).join(', ')} melden?`)) void change(match, 'ergebnis', error, submit, score);
+        if (correcting && !reason.value.trim()) { error.textContent = 'Bitte gib einen Grund an.'; return; }
+        if (confirm(`Ergebnis ${formatScore(score)} ${correcting ? 'als Korrektur vorschlagen' : 'melden'}?`)) {
+          void change(match, correcting ? 'korrektur-vorschlagen' : 'ergebnis', error, submit, score, reason.value.trim());
+        }
       });
-      card.append(form);
+      if (correcting) {
+        const edit = element('details', '', 'border-t border-[#d9dbd0] pt-3');
+        edit.append(element('summary', 'Ergebnis korrigieren', 'mb-3 cursor-pointer text-sm font-semibold underline underline-offset-4'), form);
+        card.append(edit);
+      } else card.append(form);
     } else if (match.action === 'review' && match.proposedScore) {
       const score: number[][] = JSON.parse(match.proposedScore);
       const buttons = element('div', '', 'flex flex-wrap gap-2');
@@ -84,7 +107,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         button.onclick = () => { if (confirm(`${name}?`)) void change(match, action, error, button); };
         buttons.append(button);
       }
-      card.append(element('p', score.map(set => set.join(':')).join(', '), 'mb-3 font-bold'), buttons);
+      card.append(element('p', `Vorschlag: ${formatScore(score)}`, 'mb-3 font-bold'), buttons);
     }
     card.append(error);
     return card;

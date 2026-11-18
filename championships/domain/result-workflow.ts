@@ -6,10 +6,12 @@ type Match = {
   away: string | null;
   version: number;
   status: 'open' | 'submitted' | 'disputed' | 'confirmed' | 'completed';
+  score?: Score | null;
   submission: { userId: string; playerId: string | null; score: Score; version: number } | null;
 };
 type Action =
   | { kind: 'submit'; score: Score }
+  | { kind: 'propose'; score: Score; reason: string }
   | { kind: 'confirm' | 'dispute' }
   | { kind: 'correct'; score: Score; reason: string }
   | { kind: 'reset'; reason: string };
@@ -44,6 +46,8 @@ export function resultTransition(actor: Actor | null, match: Match, context: {
     throw new ResultWorkflowError(409, 'Das Spiel ist gesperrt oder wurde geändert.');
   }
   const version = match.version + 1;
+  const submission = match.submission?.version === match.version ? match.submission : null;
+  const ownSubmission = submission && (submission.userId === actor.userId || submission.playerId === actor.playerId);
   function official(score: Score) {
     let side: 0 | 1;
     try { side = validateScore(score); }
@@ -60,12 +64,23 @@ export function resultTransition(actor: Actor | null, match: Match, context: {
     const result = official(action.score);
     return admin ? result : { status: 'submitted' as const, version, score: action.score };
   }
-  const submission = match.submission;
-  if (match.status !== 'submitted' || !submission || submission.version !== match.version) {
+  if (action.kind === 'propose') {
+    if (!action.reason.trim()) throw new ResultWorkflowError(422, 'Bitte gib einen Grund an.');
+    if (!['confirmed', 'submitted', 'disputed'].includes(match.status) || (submission && !ownSubmission) ||
+        (match.status === 'submitted' && !ownSubmission)) {
+      throw new ResultWorkflowError(409, 'Für dieses Spiel kannst du derzeit keine Korrektur vorschlagen.');
+    }
+    const proposed = official(action.score);
+    return { status: match.status === 'confirmed' ? 'confirmed' as const : 'submitted' as const,
+      version, proposal: proposed.score, proposedWinner: proposed.winner };
+  }
+  if (!['submitted', 'confirmed'].includes(match.status) || !submission) {
     throw new ResultWorkflowError(409, 'Diese Meldung wartet nicht auf Bestätigung.');
   }
-  if (!admin && (submission.userId === actor.userId || submission.playerId === actor.playerId)) {
+  if (!admin && ownSubmission) {
     throw new ResultWorkflowError(403, 'Nur der Gegner oder ein Administrator kann die Meldung prüfen.');
   }
-  return action.kind === 'confirm' ? official(submission.score) : { status: 'disputed' as const, version };
+  if (action.kind === 'confirm') return official(submission.score);
+  if (match.status === 'confirmed' && match.score) return official(match.score);
+  return { status: 'disputed' as const, version };
 }

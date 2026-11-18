@@ -69,7 +69,7 @@ export async function onRequest({ request, env }: { request: Request; env: { DB?
       })));
     } catch { return reply({ error: 'Die Ergebnishistorie konnte nicht geladen werden.' }, 503); }
   }
-  const route = /^\/api\/spiele\/([a-z0-9_-]{1,80})\/(ergebnis|bestaetigen|beanstanden|admin-korrektur|zuruecksetzen)\/?$/.exec(url.pathname);
+  const route = /^\/api\/spiele\/([a-z0-9_-]{1,80})\/(ergebnis|korrektur-vorschlagen|bestaetigen|beanstanden|admin-korrektur|zuruecksetzen)\/?$/.exec(url.pathname);
   if (!route) return reply({ error: 'Spiel nicht gefunden.' }, 404);
   if (request.method !== (route[2] === 'admin-korrektur' ? 'PATCH' : 'POST')) return reply({ error: 'Methode nicht zulässig.' }, 405);
   if (request.headers.get('Origin') !== url.origin) return reply({ error: 'Anfrage nicht erlaubt.' }, 403);
@@ -88,13 +88,14 @@ export async function onRequest({ request, env }: { request: Request; env: { DB?
     let action: Action;
     switch (route[2]) {
       case 'ergebnis': if (!score) return reply({ error: 'Ungültige Satzstände.' }, 422); action = { kind: 'submit', score }; break;
+      case 'korrektur-vorschlagen': if (!score || !reason) return reply({ error: 'Satzstände und Begründung erforderlich.' }, 422); action = { kind: 'propose', score, reason }; break;
       case 'admin-korrektur': if (!score || !reason) return reply({ error: 'Satzstände und Begründung erforderlich.' }, 422); action = { kind: 'correct', score, reason }; break;
       case 'zuruecksetzen': if (!reason) return reply({ error: 'Begründung erforderlich.' }, 422); action = { kind: 'reset', reason }; break;
       case 'bestaetigen': action = { kind: 'confirm' }; break;
       default: action = { kind: 'dispute' };
     }
     const row = await db.prepare(`SELECT m.id, m.championship_id AS championshipId, m.phase, m.home, m.away, m.status, m.version,
-        s.kind AS category, s.status='active' AS active, c.allow_submissions, c.published,
+        s.kind AS category, (s.status='active' AND c.status IN ('groups_active','phase_active')) AS active, c.allow_submissions, c.published,
         (s.status='closed' AND m.status='confirmed' AND c.status IN ('finished','archived')) AS correctable,
         r.submitted_by, r.submitted_as_player, r.score AS submitted_score
       FROM championship_matches m JOIN championship_stages s ON s.championship_id=m.championship_id AND s.phase=m.phase

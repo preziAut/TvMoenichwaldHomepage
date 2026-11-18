@@ -19,7 +19,7 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, text: string, cl
 type AuditValue = { status: string; score?: Score | null };
 type AuditEntry = { action: string; actor: string; reason: string | null; created_at: string; previous: AuditValue | null; current: AuditValue | null };
 const auditActions: Record<string, string> = { submit: 'Ergebnis eingetragen', confirm: 'Ergebnis bestätigt',
-  dispute: 'Ergebnis beanstandet', correct: 'Ergebnis korrigiert', reset: 'Ergebnis zurückgesetzt' };
+  dispute: 'Ergebnis beanstandet', correct: 'Ergebnis korrigiert', propose: 'Korrektur vorgeschlagen', reset: 'Ergebnis zurückgesetzt' };
 const auditDate = new Intl.DateTimeFormat('de-AT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Vienna' });
 
 function resultHistory(matchId: string) {
@@ -75,6 +75,7 @@ export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
   const proposed = match.proposal ? JSON.parse(match.proposal) as Score : null;
   const shown = match.score ?? proposed;
   if (shown) card.append(element('p', shown.map(set => set.join(':')).join(', '), 'mt-2 font-semibold'));
+  if (match.score && proposed) card.append(element('p', `Offener Korrekturvorschlag: ${proposed.map(set => set.join(':')).join(', ')}`, 'mt-2 text-sm'));
   if (match.version > 0) card.append(resultHistory(match.id));
   if ((!match.editable && !match.correctable) || !match.home_name || !match.away_name || match.status === 'completed') return card;
 

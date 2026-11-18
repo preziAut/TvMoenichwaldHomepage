@@ -2,7 +2,7 @@ import { placementGroups, roundRobin, standings, type OfficialMatch } from '../d
 import { createKnockout } from '../domain/knockout.ts';
 import { AdminInputError, type AdminDatabase } from './admin.ts';
 
-type PhaseMatch = { id: string; status: string; version: number; group_position: number; home: string; away: string; score: string };
+type PhaseMatch = { id: string; status: string; version: number; group_position: number; home: string; away: string; score: string; pending: number };
 
 export async function managePhase(db: AdminDatabase, actor: string, id: string, action: 'preview' | 'start' | 'finish', data: Record<string, unknown>) {
   const q = (sql: string, ...bindings: (string | number | null)[]) => db.prepare(sql).bind(...bindings);
@@ -13,11 +13,12 @@ export async function managePhase(db: AdminDatabase, actor: string, id: string, 
     throw new AdminInputError('Die Turnierphase ist nicht aktiv oder wurde geändert.');
   }
   const matches = (await q(`SELECT id,status,version,group_position,home,away,
+      EXISTS(SELECT 1 FROM championship_submissions r WHERE r.match_id=m.id AND r.match_version=m.version AND r.status='pending') AS pending,
       (SELECT json_group_array(json_array(home_games,away_games)) FROM
         (SELECT home_games,away_games FROM championship_match_sets WHERE match_id=m.id ORDER BY set_number)) AS score
       FROM championship_matches m WHERE championship_id=? AND phase=?`, id, phase).all<PhaseMatch>()).results;
   if ((!matches.length && (phase === 1 || tournament.phase_two === 'knockout')) ||
-      matches.some(match => !['confirmed', 'completed'].includes(match.status))) {
+      matches.some(match => match.pending || !['confirmed', 'completed'].includes(match.status))) {
     throw new AdminInputError('Alle Begegnungen dieser Phase müssen bestätigt sein.');
   }
   const groups = (await q(`SELECT group_position, player_id, display_name FROM championship_group_members

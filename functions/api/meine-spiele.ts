@@ -16,9 +16,13 @@ export async function onRequest({ request, env }: { request: Request; env: { DB?
     const { results } = await db.prepare(`SELECT m.id,m.version,m.status,m.scheduled_at,c.title,
       a.display_name AS home,b.display_name AS away,
       r.score AS proposedScore,
-      CASE WHEN s.status='active' AND c.allow_submissions=1 AND ?=1 AND m.home IS NOT NULL AND m.away IS NOT NULL THEN
-        CASE WHEN m.status='open' THEN 'submit' WHEN m.status='submitted' AND r.submitted_by<>?
-          AND r.submitted_as_player<>? THEN 'review' ELSE NULL END END AS action
+      CASE WHEN m.status='confirmed' THEN (SELECT json_group_array(json_array(home_games,away_games)) FROM
+        (SELECT home_games,away_games FROM championship_match_sets WHERE match_id=m.id ORDER BY set_number)) END AS officialScore,
+      CASE WHEN s.status='active' AND c.status IN ('groups_active','phase_active') AND c.allow_submissions=1 AND ?=1
+        AND m.home IS NOT NULL AND m.away IS NOT NULL THEN
+        CASE WHEN m.status='open' THEN 'submit'
+          WHEN r.id IS NOT NULL AND r.submitted_by<>? AND COALESCE(r.submitted_as_player,'')<>? THEN 'review'
+          WHEN m.status IN ('confirmed','submitted','disputed') THEN 'correct' END END AS action
       FROM championship_matches m JOIN championships c ON c.id=m.championship_id
       JOIN championship_stages s ON s.championship_id=m.championship_id AND s.phase=m.phase
       LEFT JOIN championship_players a ON a.id=m.home LEFT JOIN championship_players b ON b.id=m.away
