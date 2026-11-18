@@ -7,6 +7,11 @@ export interface Database {
   transaction<T>(work: (connection: Connection) => Promise<T>): Promise<T>;
 }
 
+export function connectBookingDatabase(connectionString: string) {
+  const pool = new Pool({ connectionString, max: 1, connectionTimeoutMillis: 5000 });
+  return { database: postgresDatabase(pool), close: () => pool.end() };
+}
+
 export function postgresDatabase(pool: Pool): Database {
   return {
     async transaction(work) {

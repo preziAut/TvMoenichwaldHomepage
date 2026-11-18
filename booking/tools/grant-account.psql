@@ -1,0 +1,37 @@
+\set ON_ERROR_STOP on
+BEGIN;
+
+-- user_id must come from the verified, active membership in the shared login database.
+CREATE TEMP TABLE account_grant (
+  club_id uuid NOT NULL,
+  user_id text NOT NULL CHECK (length(user_id) > 0),
+  role text NOT NULL CHECK (role IN ('member', 'admin')),
+  pilot_enabled boolean NOT NULL
+) ON COMMIT DROP;
+INSERT INTO account_grant VALUES (
+  (SELECT club_id FROM booking_locations WHERE slug = :'site'),
+  :'user_id', :'role', :'pilot_enabled'::boolean
+);
+
+SELECT c.id FROM clubs c JOIN account_grant g ON g.club_id = c.id FOR UPDATE OF c;
+
+WITH new_member AS (
+  INSERT INTO members (club_id, id, display_name, role, state)
+  SELECT g.club_id, gen_random_uuid(), 'Vereinsmitglied', g.role, 'active'
+  FROM account_grant g WHERE NOT EXISTS (
+    SELECT 1 FROM booking_accounts a WHERE a.club_id = g.club_id AND a.user_id = g.user_id
+  )
+  RETURNING club_id, id
+)
+INSERT INTO booking_accounts (club_id, user_id, member_id, pilot_enabled)
+  SELECT n.club_id, g.user_id, n.id, g.pilot_enabled FROM new_member n JOIN account_grant g USING (club_id);
+
+UPDATE members m SET role = g.role, state = 'active'
+FROM booking_accounts a JOIN account_grant g USING (club_id, user_id)
+WHERE m.club_id = a.club_id AND m.id = a.member_id;
+
+UPDATE booking_accounts a SET pilot_enabled = g.pilot_enabled
+FROM account_grant g WHERE a.club_id = g.club_id AND a.user_id = g.user_id
+RETURNING a.member_id;
+
+COMMIT;

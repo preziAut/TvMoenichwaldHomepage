@@ -6,10 +6,12 @@ import Navbar from '../components/Navbar.astro';
 interface Props {
   title: string;
   description?: string;
+  noindex?: boolean;
 }
 
 const {
   title,
+  noindex = false,
   description = 'Tennis, Gemeinschaft und Vereinsleben in Mönichwald. Termine, Bilder und Platzreservierung beim TV Mönichwald.',
 } = Astro.props;
 
@@ -32,7 +34,7 @@ const link = 'text-[#e4ebdf] hover:text-[#e2f28d]';
     <meta property="og:url" content={canonical} />
     <meta name="theme-color" content="#f7f5ed" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    {import.meta.env.PUBLIC_SITE_APPROVED !== 'true' && <meta name="robots" content="noindex,nofollow" />}
+    {(noindex || import.meta.env.PUBLIC_SITE_APPROVED !== 'true') && <meta name="robots" content="noindex,nofollow" />}
   </head>
   <body class="flex min-h-screen flex-col bg-[#f7f5ed]! font-['Instrument_Sans',system-ui,sans-serif]! text-[#152b23]!">
     <a class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-3 focus:text-indigo-700" href="#inhalt">Zum Inhalt</a>

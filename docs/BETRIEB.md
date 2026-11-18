@@ -13,12 +13,13 @@ Cloudflare Pages mit dem GitHub-Repository verbinden. Buildvariablen:
 
 | Variable | Zweck |
 |---|---|
-| `PUBLIC_WALDBACH_URL` | Geprüfte neue HTTPS-Adresse des Waldbach-Portals |
 | `PUBLIC_WEBCAM_URL` | HTTPS-Bildquelle auf dem alten Host oder separater Webcam-Subdomain |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Öffentlicher Turnstile-Schlüssel für freigegebene Hostnamen |
 | `PUBLIC_SITE_APPROVED` | Erst nach vollständiger Abnahme `true` setzen |
 
-Functions-Secrets: `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `CONTACT_FROM` (verifizierter Absender), `CONTACT_TO` (Vereinsadresse). Nicht in Git oder PUBLIC_-Variablen eintragen. Runtime-Konfiguration `WALDBACH_URL` und `WEBCAM_URL` analog zu den Buildvariablen setzen. Für Produktion und Preview getrennt konfigurieren; Preview soll keine echten E-Mails versenden.
+Functions-Secrets: `RESEND_API_KEY`, `TURNSTILE_SECRET_KEY`, `CONTACT_FROM` (verifizierter Absender), `CONTACT_TO` (Vereinsadresse). Nicht in Git oder PUBLIC_-Variablen eintragen. `WALDBACH_URL` enthält zur Laufzeit die geprüfte HTTPS-Adresse des Waldbach-Portals. `WEBCAM_URL` entspricht der Webcam-Buildvariablen. Für Produktion und Preview getrennt konfigurieren. Preview soll keine echten E-Mails versenden.
+
+Für Pilot und Livebetrieb der neuen Buchung gilt die [Anleitung zur Freischaltung](BUCHUNG-FREISCHALTUNG.md).
 
 Resend-Absenderdomain verifizieren und erforderliche DNS-Einträge ergänzen, ohne bestehende Mail-Einträge zu ersetzen. Turnstile auf die erlaubten Hostnamen beschränken. `/api/contact` per Cloudflare-Regel zusätzlich auf z. B. fünf POST-Anfragen pro Minute je IP begrenzen, sofern der gewählte Tarif diese Regel unterstützt. Der Endpunkt prüft unabhängig davon Origin, Größen, Felder, Honeypot, Turnstile-Hostname und -Action; ohne Secrets liefert er 503.
 

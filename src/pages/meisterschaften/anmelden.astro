@@ -32,7 +32,18 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   const logout = document.querySelector<HTMLButtonElement>('#logout')!;
   const status = document.querySelector('#login-status')!;
   const token = location.hash.slice(1);
-  const target = new URLSearchParams(location.search).get('meisterschaft');
+  const params = new URLSearchParams(location.search);
+  const target = params.get('meisterschaft');
+  const validBooking = (value: string | null) => value === 'moenichwald' || value === 'waldbach' ? value : null;
+  const bookingTarget = validBooking(params.get('buchung'));
+  function bookingDestination(fromEmail = false) {
+    let site = bookingTarget;
+    try {
+      if (fromEmail && !site) site = validBooking(localStorage.getItem('tv-booking-return'));
+      localStorage.removeItem('tv-booking-return');
+    } catch { /* Storage may be disabled in the browser. */ }
+    return site ? `/platzbuchung/?standort=${site}` : null;
+  }
   if (token) history.replaceState(null, '', location.pathname);
   if (/^[a-f0-9]{64}$/.test(token)) { verify.hidden = false; form.hidden = true; passwordForm.hidden = true; }
   async function send(action: string, body: object, button: HTMLButtonElement) {
@@ -50,6 +61,10 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   form.addEventListener('submit', async event => {
     event.preventDefault();
     if (await send('link', { email: new FormData(form).get('email') }, form.querySelector('button')!)) {
+      try {
+        if (bookingTarget) localStorage.setItem('tv-booking-return', bookingTarget);
+        else localStorage.removeItem('tv-booking-return');
+      } catch { /* The email still allows sign-in without browser storage. */ }
       status.textContent = 'Wenn deine Adresse freigeschaltet ist, erhältst du eine E-Mail.';
     }
   });
@@ -57,10 +72,10 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     event.preventDefault();
     if (await send('passwort', Object.fromEntries(new FormData(passwordForm)), passwordForm.querySelector('button')!)) {
       passwordForm.reset();
-      location.href = target && /^[a-zA-Z0-9_-]{1,80}$/.test(target)
-        ? `/meisterschaften/admin/?id=${encodeURIComponent(target)}` : '/meisterschaften/admin/';
+      location.href = bookingDestination() ?? (target && /^[a-zA-Z0-9_-]{1,80}$/.test(target)
+        ? `/meisterschaften/admin/?id=${encodeURIComponent(target)}` : '/meisterschaften/admin/');
     }
   });
-  verify.onclick = async () => { if (await send('bestaetigen', { token }, verify)) location.href = '/meisterschaften/meine-spiele/'; };
+  verify.onclick = async () => { if (await send('bestaetigen', { token }, verify)) location.href = bookingDestination(true) ?? '/meisterschaften/meine-spiele/'; };
   logout.onclick = async () => { if (await send('abmelden', {}, logout)) location.href = '/meisterschaften/'; };
 </script>

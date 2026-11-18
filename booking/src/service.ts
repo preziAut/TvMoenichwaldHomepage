@@ -178,7 +178,7 @@ export class BookingService {
       const items=(await tx.query<Allocation>(`SELECT * FROM allocations WHERE club_id=$1 AND state='active'
         AND starts_at<$3 AND ends_at>$2 ORDER BY starts_at`,[actor.clubId,start,end])).rows;
       return {courts,allocations:items.map(r=>({id:r.id,courtId:r.court_id,kind:r.kind,startsAt:r.starts_at,endsAt:r.ends_at,
-        ownedByMe:r.owner_id===actor.memberId,cancellationDeadline:r.owner_id===actor.memberId?r.cancellation_deadline:null}))};
+        ownedByMe:r.owner_id===actor.memberId,cancellationDeadline:r.owner_id===actor.memberId && r.cancellation_enabled ? r.cancellation_deadline : null}))};
     });
   }
 }

@@ -1,6 +1,6 @@
 # Neues Buchungssystem – Datenaufnahme und Importprobe
 
-Dieser Bereich enthält die ep-3-Importprobe sowie einen funktionsfähigen Buchungskern mit lokaler Testoberfläche. Noch keine neue öffentlich nutzbare Buchungsanwendung, keine produktive Anmeldung und kein produktiver Datenbankwechsel.
+Dieser Bereich enthält die ep-3-Importprobe sowie den Buchungskern mit lokaler Testoberfläche. Die Website bindet den Kern über Pages Functions und das gemeinsame Vereinskonto an. Die öffentliche Buchung bleibt bis zur standortbezogenen Freischaltung bei ep-3. Produktivbetrieb und Datenübernahme sind in der [Anleitung zur Freischaltung](../docs/BUCHUNG-FREISCHALTUNG.md) beschrieben.
 
 ## Isolierte Cloudflare-Demo
 

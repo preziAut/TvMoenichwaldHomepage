@@ -1,0 +1,24 @@
+---
+import { ArrowUpRight, MapPin } from 'lucide-astro';
+import { site } from '../config';
+---
+
+<section aria-label="Buchungsstandorte" class="grid gap-4 sm:grid-cols-2">
+  {site.bookings.map(booking => (
+    <article class="flex min-w-0 flex-col rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
+      <div class="mb-4 flex items-center gap-2 text-sm font-semibold text-stone-600">
+        <MapPin size={18} class="text-orange-800" aria-hidden="true" />
+        {booking.courts} Plätze · Eigener Kalender
+      </div>
+      <h2 class="text-2xl font-bold tracking-tight text-slate-900">{booking.name}</h2>
+      <p class="mb-5 mt-2 text-sm leading-relaxed text-slate-600">{booking.description}</p>
+      <a
+        href={`/api/platzbuchung/${booking.id}/start`}
+        class="mt-auto inline-flex min-h-12 w-full items-center justify-between gap-3 rounded-xl bg-orange-700 px-4 py-3 text-sm font-bold text-white no-underline transition-colors hover:bg-orange-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-800"
+      >
+        In {booking.name} buchen
+        <ArrowUpRight size={18} class="shrink-0" aria-hidden="true" />
+      </a>
+    </article>
+  ))}
+</section>

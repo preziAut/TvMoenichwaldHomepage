@@ -51,7 +51,7 @@ export async function saveGroupResult<Statement>(db: Database<Statement>, actor:
       reconcileKnockout(bracket.map(fixture => fixture.id === match.id ? { ...fixture, winner: next.proposedWinner ?? null } : fixture));
     } else if (next.status === 'confirmed' || next.status === 'open') {
       const reconciled = reconcileKnockout(bracket.map(fixture => fixture.id !== match.id ? fixture : {
-        ...fixture, state: next.status, winner: next.status === 'confirmed' ? next.winner : null,
+        ...fixture, state: next.status, winner: next.status === 'confirmed' && 'winner' in next ? next.winner : null,
       }));
       for (const fixture of reconciled) {
         const previous = bracket.find(row => row.round === fixture.round && row.position === fixture.position)!;
@@ -76,7 +76,7 @@ export async function saveGroupResult<Statement>(db: Database<Statement>, actor:
     batch.push(statement(`UPDATE championship_submissions SET status=?, resolved_by=?, resolved_at=CURRENT_TIMESTAMP
       WHERE match_id=? AND status='pending'`, submissionState, actor.userId, match.id));
     batch.push(statement('DELETE FROM championship_match_sets WHERE match_id=?', match.id));
-    if (next.status === 'confirmed' && 'score' in next) {
+    if (next.status === 'confirmed' && 'score' in next && next.score) {
       next.score.forEach(([home, away], index) => batch.push(statement(`INSERT INTO championship_match_sets
         (match_id,set_number,home_games,away_games) VALUES (?,?,?,?)`, match.id, index + 1, home, away)));
     }

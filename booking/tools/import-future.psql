@@ -1,0 +1,67 @@
+\set ON_ERROR_STOP on
+BEGIN;
+
+CREATE TEMP TABLE booking_import (
+  source_id text PRIMARY KEY CHECK (length(source_id) > 0),
+  court_id uuid NOT NULL,
+  member_id uuid NOT NULL,
+  starts_at text NOT NULL CHECK (starts_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?Z$'),
+  ends_at text NOT NULL CHECK (ends_at ~ '^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,6})?Z$')
+) ON COMMIT DROP;
+
+-- Run from a private working directory containing the reviewed CSV.
+\copy booking_import FROM 'future-bookings.csv' WITH (FORMAT csv, HEADER MATCH)
+
+CREATE TEMP TABLE booking_import_location ON COMMIT DROP AS
+  SELECT club_id FROM booking_locations WHERE slug = :'site';
+
+DO $$
+BEGIN
+  IF (SELECT count(*) FROM booking_import_location) <> 1 THEN RAISE EXCEPTION 'Unknown location'; END IF;
+  IF NOT EXISTS (SELECT 1 FROM booking_environment WHERE mode = 'live') THEN
+    RAISE EXCEPTION 'Import requires a live database';
+  END IF;
+END $$;
+
+-- Match the lock order used by the booking service.
+SELECT c.id FROM clubs c JOIN booking_import_location l ON l.club_id = c.id FOR UPDATE OF c;
+
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM booking_import i CROSS JOIN booking_import_location l
+    LEFT JOIN courts c ON c.club_id = l.club_id AND c.id = i.court_id AND c.enabled
+    LEFT JOIN members m ON m.club_id = l.club_id AND m.id = i.member_id
+    LEFT JOIN booking_legacy_allocations b ON b.club_id = l.club_id AND b.source_id = i.source_id
+    LEFT JOIN allocations a ON a.club_id = b.club_id AND a.id = b.allocation_id
+    WHERE c.id IS NULL OR m.id IS NULL OR i.ends_at::timestamptz <= i.starts_at::timestamptz
+      OR (b.source_id IS NULL AND i.starts_at::timestamptz <= CURRENT_TIMESTAMP)
+      OR (b.source_id IS NOT NULL AND
+          (a.court_id, a.owner_id, a.starts_at, a.ends_at) IS DISTINCT FROM
+          (i.court_id, i.member_id, i.starts_at::timestamptz, i.ends_at::timestamptz))
+  ) THEN RAISE EXCEPTION 'Invalid court/member/time or mismatch with previously imported reservation'; END IF;
+END $$;
+
+CREATE TEMP TABLE booking_import_new ON COMMIT DROP AS
+  SELECT i.*, l.club_id, gen_random_uuid() AS allocation_id
+  FROM booking_import i CROSS JOIN booking_import_location l
+  WHERE NOT EXISTS (
+    SELECT 1 FROM booking_legacy_allocations b WHERE b.club_id = l.club_id AND b.source_id = i.source_id
+  );
+
+INSERT INTO allocations (
+  club_id, id, court_id, owner_id, kind, starts_at, ends_at, policy_id,
+  cancellation_enabled, cancellation_deadline, request_key
+)
+  SELECT i.club_id, i.allocation_id, i.court_id, i.member_id, 'booking', i.starts_at::timestamptz,
+    i.ends_at::timestamptz, p.id, p.cancellation_enabled,
+    i.starts_at::timestamptz - p.cancellation_seconds * INTERVAL '1 second', i.allocation_id
+  FROM booking_import_new i CROSS JOIN LATERAL (
+    SELECT * FROM policies WHERE club_id = i.club_id ORDER BY revision DESC LIMIT 1
+  ) p;
+
+INSERT INTO booking_legacy_allocations (club_id, source_id, allocation_id)
+  SELECT club_id, source_id, allocation_id FROM booking_import_new;
+
+SELECT count(*) AS newly_imported FROM booking_import_new;
+COMMIT;

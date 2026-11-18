@@ -9,6 +9,7 @@ import {postgresDatabase} from '../src/database.ts';
 import type {Database,Connection} from '../src/database.ts';
 import {BookingService} from '../src/service.ts';
 import type {PolicyInput,Identity} from '../src/service.ts';
+import {bookingAccess} from '../src/website.ts';
 
 // CI optionally runs the same suite against a fresh real PostgreSQL database.
 const pool=process.env.BOOKING_TEST_DATABASE_URL?new Pool({connectionString:process.env.BOOKING_TEST_DATABASE_URL,max:4}):null;
@@ -147,4 +148,25 @@ test('database refuses a court belonging to another club even outside service ch
   await rejects(service.reserve(memberActor,{...request(),courtId:foreignCourt}),'COURT_UNAVAILABLE');
   const allocation=await service.reserve(memberActor,request());
   await assert.rejects(db.query('UPDATE allocations SET court_id=$1 WHERE id=$2',[foreignCourt,allocation.id]),{code:'23503'});
+});
+
+test('website migration supports two courts per site and isolates pilot accounts and data', async () => {
+  for (const migration of ['002_website.sql', '003_legacy_allocations.sql']) {
+    await db.exec(await readFile(new URL(`../migrations/${migration}`, import.meta.url), 'utf8'));
+  }
+  await db.query("INSERT INTO booking_environment (mode) VALUES ('pilot')");
+  const { rows: [site] } = await db.query<{ club_id: string }>(
+    "SELECT club_id FROM booking_locations WHERE slug='waldbach'");
+  await db.query("INSERT INTO members VALUES ($1,$2,'Synthetic','member','active')", [site.club_id, member]);
+  await db.query("INSERT INTO booking_accounts VALUES ($1,'shared-user',$2,true)", [site.club_id, member]);
+  await rejects(bookingAccess(db, 'moenichwald', 'shared-user', true), 'FORBIDDEN');
+  await rejects(bookingAccess(db, 'waldbach', 'shared-user', false), 'FORBIDDEN');
+  const access = await bookingAccess(db, 'waldbach', 'shared-user', true);
+  const { courts } = await service.calendar(access.actor, '2030-06-02T00:00:00Z', '2030-06-03T00:00:00Z');
+  assert.deepEqual(courts.map(court => court.name), ['Platz 1', 'Platz 2']);
+  const input = { ...request(), courtId: courts[0].id };
+  const booking = await service.reserve(access.actor, input);
+  assert.equal((await service.cancel(access.actor, booking.id)).state, 'cancelled');
+  await db.query('UPDATE booking_accounts SET pilot_enabled=false WHERE club_id=$1', [site.club_id]);
+  await rejects(bookingAccess(db, 'waldbach', 'shared-user', true), 'FORBIDDEN');
 });
