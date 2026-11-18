@@ -88,7 +88,7 @@ try {
   const final = finished.matches.find(match => match.phase === 2 && match.round === 3 && match.bracket_position === 1);
   const winner = final.winner === final.home ? final.home_name : final.away_name;
   await page.getByRole('link', { name: 'Spielplan und Tabelle ansehen' }).click();
-  await page.getByText('Turniersieger', { exact: true }).waitFor();
+  await page.getByRole('region', { name: 'Podium' }).getByText('3. Platz', { exact: true }).waitFor();
   assert.equal(await page.getByRole('heading', { name: /^Vorrunde · Gruppe/ }).count(), 5);
   console.log(JSON.stringify({ url: page.url(), adminUrl: `${origin}/meisterschaften/admin/?id=${draft.id}`, winner, final: final.score, matches: 58 }));
 } finally {

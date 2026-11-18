@@ -67,11 +67,26 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     const finals = data.matches.filter(match => match.phase === 2 && match.bracket_position !== null);
     const lastRound = Math.max(0, ...finals.map(match => match.round));
     const final = finals.find(match => match.round === lastRound && match.bracket_position === 1);
-    const champion = final?.winner ? (final.winner === final.home ? final.home_name : final.away_name) : null;
-    if (champion && data.championship.status === 'finished') {
-      const winner = make('div', '', 'rounded-xl bg-[#173a2e] p-5 text-white');
-      winner.append(make('p', 'Turniersieger', 'text-sm font-semibold'), make('p', champion, 'mt-2 text-2xl font-bold'));
-      detail.append(winner);
+    const bronze = finals.find(match => match.round === lastRound && match.bracket_position === 2);
+    const winnerName = (match?: Match) => match?.winner ? (match.winner === match.home ? match.home_name : match.away_name) : null;
+    const champion = winnerName(final);
+    if (champion && ['finished', 'archived'].includes(data.championship.status)) {
+      const runnerUp = final!.winner === final!.home ? final!.away_name : final!.home_name;
+      const podium = make('section', '', 'space-y-3');
+      const heading = make('h3', 'Podium', 'text-xl font-bold');
+      heading.id = 'podium-titel';
+      podium.setAttribute('aria-labelledby', heading.id);
+      const list = make('ol', '', 'grid list-none gap-3 p-0 sm:grid-cols-3');
+      const placements = [champion, runnerUp ?? 'Noch offen', winnerName(bronze) ?? (bronze ? 'Noch offen' : 'Nicht ausgespielt')];
+      for (const [index, name] of placements.entries()) {
+        const place = make('li', '', `min-w-0 rounded-xl border p-4 sm:p-5 ${index === 0
+          ? 'border-[#173a2e] bg-[#173a2e] text-white' : 'border-[#d9dbd0] bg-white text-[#173a2e]'}`);
+        place.append(make('p', `${index + 1}. Platz`, 'text-sm font-semibold'),
+          make('p', name, 'mt-2 break-words text-xl font-bold'));
+        list.append(place);
+      }
+      podium.append(heading, list);
+      detail.append(podium);
     }
     const formatPercent = new Intl.NumberFormat('de-AT', { style: 'percent', maximumFractionDigits: 2 });
     const percentage = (won: number, lost: number) => won + lost ? formatPercent.format(won / (won + lost)) : '–';
