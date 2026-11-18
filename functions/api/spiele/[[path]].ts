@@ -43,6 +43,32 @@ export async function parseBody(request: Request) {
 export async function onRequest({ request, env }: { request: Request; env: { DB?: DB } }) {
   const reply = (value: unknown, status = 200) => Response.json(value, { status, headers: { 'Cache-Control': 'private, no-store' } });
   const url = new URL(request.url);
+  const history = /^\/api\/spiele\/([a-z0-9_-]{1,80})\/historie\/?$/.exec(url.pathname);
+  if (history) {
+    if (request.method !== 'GET') return reply({ error: 'Methode nicht zulässig.' }, 405);
+    const db = env.DB;
+    if (!db) return reply({ error: 'Meisterschaftsdatenbank nicht verfügbar.' }, 503);
+    try {
+      const actor = await championshipSessions(db).read(request);
+      if (actor?.role !== 'admin') return reply({ error: 'Administratorzugang erforderlich.' }, actor ? 403 : 401);
+      const match = await db.prepare(`SELECT m.id FROM championship_matches m JOIN championships c ON c.id=m.championship_id
+        WHERE m.id=? AND c.deleted_at IS NULL`).bind(history[1]).first();
+      if (!match) return reply({ error: 'Spiel nicht gefunden.' }, 404);
+      const { results } = await db.prepare(`SELECT a.action, a.previous_value, a.new_value, a.reason, a.created_at,
+          COALESCE(p.display_name, e.email, CASE WHEN u.role='admin' THEN 'Administrator' ELSE 'Vereinsmitglied' END) AS actor
+        FROM championship_result_audit a JOIN championship_memberships u ON u.user_id=a.actor_id
+        LEFT JOIN championship_member_emails e ON e.user_id=a.actor_id
+        LEFT JOIN championship_player_links l ON l.user_id=a.actor_id
+        LEFT JOIN championship_players p ON p.id=l.player_id
+        JOIN championship_matches m ON m.id=a.match_id JOIN championships c ON c.id=m.championship_id
+        WHERE a.match_id=? AND c.deleted_at IS NULL ORDER BY a.created_at DESC, a.rowid DESC`).bind(history[1]).all<{
+          action: string; previous_value: string | null; new_value: string | null; reason: string | null; created_at: string; actor: string;
+        }>();
+      return reply(results.map(({ previous_value, new_value, ...entry }) => ({ ...entry,
+        previous: previous_value ? JSON.parse(previous_value) : null, current: new_value ? JSON.parse(new_value) : null,
+      })));
+    } catch { return reply({ error: 'Die Ergebnishistorie konnte nicht geladen werden.' }, 503); }
+  }
   const route = /^\/api\/spiele\/([a-z0-9_-]{1,80})\/(ergebnis|bestaetigen|beanstanden|admin-korrektur|zuruecksetzen)\/?$/.exec(url.pathname);
   if (!route) return reply({ error: 'Spiel nicht gefunden.' }, 404);
   if (request.method !== (route[2] === 'admin-korrektur' ? 'PATCH' : 'POST')) return reply({ error: 'Methode nicht zulässig.' }, 405);

@@ -9,7 +9,7 @@ import { championshipSessions } from '../championships/server/sessions.ts';
 for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship through the ${phaseTwo} phase`, async () => {
   const sqlite = new DatabaseSync(':memory:');
   try {
-    for (const file of ['0001_competition.sql', '0002_sessions.sql', '0005_contact_keys.sql', '0006_championship_trash.sql']) sqlite.exec(readFileSync(
+    for (const file of ['0001_competition.sql', '0002_sessions.sql', '0003_identity.sql', '0005_contact_keys.sql', '0006_championship_trash.sql']) sqlite.exec(readFileSync(
       new URL(`../championships/migrations/${file}`, import.meta.url), 'utf8'));
     const db = { prepare: sql => ({ bind: (...args) => ({
       first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -103,8 +103,18 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     assert.equal((await call(results, `spiele/${game.id}/admin-korrektur`, { cookie: one, data: correction })).status, 403);
     await ok(results, `spiele/${game.id}/admin-korrektur`, { cookie: admin, data: correction });
     assert.deepEqual((await ok(competitions, base, { cookie: admin })).matches.find(item => item.id === game.id).score, correction.score);
+    const historyPath = `spiele/${game.id}/historie`;
+    assert.equal((await call(results, historyPath)).status, 401);
+    assert.equal((await call(results, historyPath, { cookie: one })).status, 403);
+    const [change] = await ok(results, historyPath, { cookie: admin });
+    assert.equal(change.action, 'correct');
+    assert.equal(change.reason, correction.reason);
+    assert.equal(change.actor, 'Administrator');
+    assert.deepEqual(change.previous.score, game.score);
+    assert.deepEqual(change.current.score, correction.score);
     await ok(competitions, `${base}/loeschen`, { cookie: admin, data: { version: 6, confirm: true } });
     assert.equal((await call(competitions, base, { cookie: admin })).status, 404);
+    assert.equal((await call(results, historyPath, { cookie: admin })).status, 404);
     assert.equal((await call(results, `spiele/${game.id}/admin-korrektur`, { cookie: admin, data: correction })).status, 404);
     assert.equal((await call(competitions, 'meisterschaften/papierkorb')).status, 401);
     const trash = await ok(competitions, 'meisterschaften/papierkorb', { cookie: admin });

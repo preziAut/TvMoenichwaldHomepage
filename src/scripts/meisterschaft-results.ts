@@ -16,6 +16,55 @@ function element<K extends keyof HTMLElementTagNameMap>(tag: K, text: string, cl
   return node;
 }
 
+type AuditValue = { status: string; score?: Score | null };
+type AuditEntry = { action: string; actor: string; reason: string | null; created_at: string; previous: AuditValue | null; current: AuditValue | null };
+const auditActions: Record<string, string> = { submit: 'Ergebnis eingetragen', confirm: 'Ergebnis bestätigt',
+  dispute: 'Ergebnis beanstandet', correct: 'Ergebnis korrigiert', reset: 'Ergebnis zurückgesetzt' };
+const auditDate = new Intl.DateTimeFormat('de-AT', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Vienna' });
+
+function resultHistory(matchId: string) {
+  const details = element('details', '', 'mt-3 border-t border-[#d9dbd0] pt-3');
+  details.dataset.resultHistory = '';
+  const body = element('div', '', 'mt-3 text-sm');
+  body.setAttribute('aria-live', 'polite');
+  details.append(element('summary', 'Ergebnishistorie', 'cursor-pointer text-sm font-semibold underline underline-offset-4'), body);
+  const value = (state: AuditValue | null) => {
+    if (!state) return '–';
+    const label = labels[state.status] ?? state.status;
+    return state.score?.length ? `${label} · ${state.score.map(set => set.join(':')).join(', ')}` : label;
+  };
+  let loaded = false;
+  let loading = false;
+  details.addEventListener('toggle', async () => {
+    if (!details.open || loaded || loading) return;
+    loading = true;
+    body.textContent = 'Historie wird geladen …';
+    try {
+      const response = await fetch(`/api/spiele/${encodeURIComponent(matchId)}/historie`);
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error ?? 'Historie nicht verfügbar.');
+      const entries = data as AuditEntry[];
+      if (!entries.length) body.textContent = 'Noch keine Änderungen protokolliert.';
+      else {
+        const list = element('ol', '', 'grid gap-2');
+        for (const entry of entries) {
+          const row = element('li', '', 'space-y-1 rounded-lg bg-[#f5f3ec] p-3 break-words');
+          const timestamp = new Date(`${entry.created_at.replace(' ', 'T')}Z`);
+          row.append(element('p', auditActions[entry.action] ?? 'Ergebnis geändert', 'font-semibold'),
+            element('p', `${auditDate.format(timestamp)} · ${entry.actor}`, 'text-xs text-[#4c5d52]'),
+            element('p', `Vorher: ${value(entry.previous)}`, ''), element('p', `Nachher: ${value(entry.current)}`, ''));
+          if (entry.reason) row.append(element('p', `Begründung: ${entry.reason}`, 'mt-2 whitespace-pre-wrap'));
+          list.append(row);
+        }
+        body.replaceChildren(list);
+      }
+      loaded = true;
+    } catch (error) { body.textContent = error instanceof Error ? error.message : 'Historie nicht verfügbar.'; }
+    finally { loading = false; }
+  });
+  return details;
+}
+
 export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
   const card = element('article', '', 'min-w-0 rounded-xl border border-[#d9dbd0] p-4');
   card.dataset.match = match.id;
@@ -26,6 +75,7 @@ export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
   const proposed = match.proposal ? JSON.parse(match.proposal) as Score : null;
   const shown = match.score ?? proposed;
   if (shown) card.append(element('p', shown.map(set => set.join(':')).join(', '), 'mt-2 font-semibold'));
+  if (match.version > 0) card.append(resultHistory(match.id));
   if ((!match.editable && !match.correctable) || !match.home_name || !match.away_name || match.status === 'completed') return card;
 
   const form = element('form', '', 'mt-4 grid gap-3');
@@ -77,6 +127,8 @@ export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
       if (!response.ok) throw new Error(output.error ?? 'Ergebnis konnte nicht gespeichert werden.');
       await refresh();
       const updated = document.querySelector<HTMLElement>(`[data-match="${CSS.escape(match.id)}"]`);
+      const history = updated?.querySelector<HTMLDetailsElement>('[data-result-history]');
+      if (history && action === 'admin-korrektur') history.open = true;
       updated?.querySelector('h3')?.focus();
     } catch (error) { message.textContent = error instanceof Error ? error.message : 'Speichern fehlgeschlagen.'; }
     finally { form.removeAttribute('aria-busy'); button.disabled = false; }
