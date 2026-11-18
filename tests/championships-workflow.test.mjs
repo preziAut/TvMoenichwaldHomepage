@@ -44,6 +44,7 @@ test('migration enforces same-group matches and the public read model hides unco
   const db = new DatabaseSync(':memory:');
   try {
     db.exec(readFileSync(new URL('../championships/migrations/0001_competition.sql', import.meta.url), 'utf8'));
+    db.exec(readFileSync(new URL('../championships/migrations/0006_championship_trash.sql', import.meta.url), 'utf8'));
     db.exec(`
       INSERT INTO championships (id,title,season,starts_on,phase_two) VALUES ('t','Test',2026,'2026-04-01','placement');
       INSERT INTO championship_players (id,first_name,last_name,display_name) VALUES ('a','A','Test','A'), ('b','B','Test','B'), ('c','C','Test','C');

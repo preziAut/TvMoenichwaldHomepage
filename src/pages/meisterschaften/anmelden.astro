@@ -1,4 +1,5 @@
 ---
+import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
 import Layout from '../../layouts/Layout.astro';
 import SectionContainer from '../../components/ui/SectionContainer.astro';
 ---
@@ -10,16 +11,16 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         <h2 class="mb-3 text-lg font-semibold">Admin-Anmeldung</h2>
         <label>E-Mail-Adresse<input type="email" name="email" required autocomplete="username" maxlength="254" /></label>
         <label>Passwort<input type="password" name="password" required autocomplete="current-password" maxlength="128" /></label>
-        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Mit Passwort anmelden</button>
+        <button class={championshipButton.primary}>Mit Passwort anmelden</button>
       </form>
       <p class="my-4">Vereinsmitglieder mit Einladung erhalten einen einmaligen Anmeldelink per E-Mail.</p>
       <form id="email-form">
         <label>E-Mail-Adresse<input type="email" name="email" required autocomplete="email" maxlength="254" /></label>
-        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Anmeldelink anfordern</button>
+        <button class={championshipButton.primary}>Anmeldelink anfordern</button>
       </form>
-      <button id="verify" hidden class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Anmeldung bestätigen</button>
+      <button id="verify" hidden class={championshipButton.primary}>Anmeldung bestätigen</button>
       <p id="login-status" role="status" class="my-4 text-sm"></p>
-      <button id="logout" class="min-h-11 text-sm font-semibold underline underline-offset-4">Abmelden</button>
+      <button id="logout" class={championshipButton.secondary}>Abmelden</button>
     </div>
   </SectionContainer>
 </Layout>

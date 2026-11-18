@@ -6,7 +6,7 @@ type PhaseMatch = { id: string; status: string; version: number; group_position:
 
 export async function managePhase(db: AdminDatabase, actor: string, id: string, action: 'preview' | 'start' | 'finish', data: Record<string, unknown>) {
   const q = (sql: string, ...bindings: (string | number | null)[]) => db.prepare(sql).bind(...bindings);
-  const tournament = await q('SELECT status,phase_two,version FROM championships WHERE id=?', id)
+  const tournament = await q('SELECT status,phase_two,version FROM championships WHERE id=? AND deleted_at IS NULL', id)
     .first<{ status: string; phase_two: 'placement' | 'knockout'; version: number }>();
   const phase = action === 'finish' ? 2 : 1;
   if (!tournament || tournament.status !== (phase === 2 ? 'phase_active' : 'groups_active') || tournament.version !== data.version) {
@@ -59,7 +59,7 @@ export async function managePhase(db: AdminDatabase, actor: string, id: string, 
   const guard = crypto.randomUUID();
   const snapshot = JSON.stringify(matches.map(match => ({ id: match.id, version: match.version })));
   const batch = [q(`INSERT INTO championship_write_preconditions SELECT ?, EXISTS (
-      SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=? AND c.status=?
+      SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=? AND c.status=? AND c.deleted_at IS NULL
       AND u.user_id=? AND u.active=1 AND u.role='admin')
     AND (SELECT count(*) FROM championship_matches WHERE championship_id=? AND phase=?)=json_array_length(?)
     AND NOT EXISTS (SELECT 1 FROM json_each(?) j LEFT JOIN championship_matches m ON m.id=j.value->>'id'

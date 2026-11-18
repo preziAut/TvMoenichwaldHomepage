@@ -27,17 +27,19 @@ export async function onRequest({ request, env }: { request: Request; env: Bindi
       const phase = /^\/api\/meisterschaften\/([a-zA-Z0-9_-]{1,80})\/(folgephase\/(?:vorschau|starten)|abschliessen)$/.exec(path);
       if (phase) return reply(await managePhase(env.DB, actor.userId, phase[1],
         phase[2].endsWith('vorschau') ? 'preview' : phase[2].endsWith('starten') ? 'start' : 'finish', body));
-      const command = /^\/api\/meisterschaften\/([a-zA-Z0-9_-]{1,80})\/(einstellungen|teilnehmer|setzliste|auslosung\/(?:vorschau|starten))$/.exec(path);
+      const command = /^\/api\/meisterschaften\/([a-zA-Z0-9_-]{1,80})\/(loeschen|wiederherstellen|einstellungen|teilnehmer|setzliste|auslosung\/(?:vorschau|starten))$/.exec(path);
       if (!command) return reply({ error: 'Aktion nicht gefunden.' }, 404);
       return reply(await administerChampionship(env.DB, actor.userId, command[1], command[2].split('/').at(-1)!, body));
     }
     const reader = publicChampionshipReader(env.DB, actor);
     if (path === '/api/meisterschaften') return reply(await reader.list());
+    if (path === '/api/meisterschaften/papierkorb') return actor?.role === 'admin' ? reply(await reader.trash()) : reply({ error: 'Administratorzugang erforderlich.' }, actor ? 403 : 401);
     const entries = /^\/api\/meisterschaften\/([a-zA-Z0-9_-]{1,80})\/teilnehmer$/.exec(path);
     if (entries && actor?.role === 'admin') {
       const db: AdminDatabase = env.DB;
       return reply((await db.prepare(`SELECT e.player_id AS id,e.seed,p.display_name FROM championship_entries e
-        JOIN championship_players p ON p.id=e.player_id WHERE e.championship_id=? ORDER BY e.seed IS NULL,e.seed,p.display_name`)
+        JOIN championship_players p ON p.id=e.player_id JOIN championships c ON c.id=e.championship_id
+        WHERE e.championship_id=? AND c.deleted_at IS NULL ORDER BY e.seed IS NULL,e.seed,p.display_name`)
         .bind(entries[1]).all()).results);
     }
     const match = /^\/api\/meisterschaften\/([a-zA-Z0-9_-]{1,80})(?:\/(gruppen|tabelle|spiele))?$/.exec(path);

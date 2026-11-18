@@ -6,7 +6,7 @@ import type { Score } from '../../../championships/domain/competition.ts';
 type Snapshot = Parameters<typeof saveGroupResult>[2];
 type Action = Parameters<typeof saveGroupResult>[4];
 type ResultRow = Omit<Snapshot, 'score' | 'submission'> & {
-  active: number; allow_submissions: number; published: number;
+  active: number; correctable: number; allow_submissions: number; published: number;
   submitted_by: string | null; submitted_as_player: string | null; submitted_score: string | null;
 };
 type SessionStatement = ReturnType<ReturnType<Parameters<typeof championshipSessions>[0]['prepare']>['bind']>;
@@ -69,11 +69,12 @@ export async function onRequest({ request, env }: { request: Request; env: { DB?
     }
     const row = await db.prepare(`SELECT m.id, m.championship_id AS championshipId, m.phase, m.home, m.away, m.status, m.version,
         s.kind AS category, s.status='active' AS active, c.allow_submissions, c.published,
+        (s.status='closed' AND m.status='confirmed' AND c.status IN ('finished','archived')) AS correctable,
         r.submitted_by, r.submitted_as_player, r.score AS submitted_score
       FROM championship_matches m JOIN championship_stages s ON s.championship_id=m.championship_id AND s.phase=m.phase
       JOIN championships c ON c.id=m.championship_id
       LEFT JOIN championship_submissions r ON r.match_id=m.id AND r.match_version=m.version AND r.status='pending'
-      WHERE m.id=?`).bind(route[1]).first<ResultRow>();
+      WHERE m.id=? AND c.deleted_at IS NULL`).bind(route[1]).first<ResultRow>();
     if (!row || (actor.role !== 'admin' && (!row.published || !actor.playerId || ![row.home, row.away].includes(actor.playerId)))) {
       return reply({ error: 'Spiel nicht gefunden.' }, 404);
     }
@@ -87,12 +88,16 @@ export async function onRequest({ request, env }: { request: Request; env: { DB?
       CASE status WHEN 'completed' THEN 'bye' ELSE status END AS state FROM championship_matches
       WHERE championship_id=? AND phase=2 AND bracket_position IS NOT NULL`).bind(row.championshipId)
       .all<NonNullable<Parameters<typeof saveGroupResult>[5]>[number]>()).results : undefined;
-    const result = await saveGroupResult(db, actor, snapshot, { phaseActive: row.active === 1,
+    const correction = actor.role === 'admin' && action.kind === 'correct' && row.correctable === 1;
+    const result = await saveGroupResult(db, actor, snapshot, { phaseActive: row.active === 1 || correction,
       submissionsOpen: row.allow_submissions === 1, version: body.version, downstreamHasResult: false }, action, bracket);
     return reply(result);
   } catch (error) {
     if (error instanceof ResultWorkflowError) return reply({ error: error.message }, error.status);
-    if (error instanceof Error && (error.message.includes('CHECK constraint failed: passed') || error.message.includes('Folgebegegnung') || error.message.includes('Turnierbaum wurde geändert'))) {
+    if (error instanceof Error && error.message.includes('Folgebegegnung')) {
+      return reply({ error: 'Die Korrektur würde eine bereits gespielte Folgebegegnung verändern.' }, 409);
+    }
+    if (error instanceof Error && (error.message.includes('CHECK constraint failed: passed') || error.message.includes('Turnierbaum wurde geändert'))) {
       return reply({ error: 'Das Spiel oder deine Freischaltung wurde geändert.' }, 409);
     }
     return reply({ error: 'Ergebnis konnte nicht gespeichert werden.' }, 503);

@@ -1,4 +1,5 @@
 ---
+import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
 import Layout from '../../layouts/Layout.astro';
 import SectionContainer from '../../components/ui/SectionContainer.astro';
 ---
@@ -8,7 +9,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     <a href="/turniere/" class="text-sm font-semibold underline underline-offset-4">Alle Turniere</a>
     <h1 id="title" class="mt-4 font-['Instrument_Serif',Georgia,serif] text-5xl text-[#173a2e] sm:text-6xl">Einzelmeisterschaften</h1>
     <div class="mt-4 flex flex-wrap items-center gap-3 text-sm font-semibold">
-      <a id="championship-login" class="inline-flex min-h-11 items-center rounded-lg bg-[#173a2e] px-4 py-2 text-white!" href="/meisterschaften/anmelden/">Vereinslogin · Anmelden</a>
+      <a id="championship-login" class={championshipButton.primary} href="/meisterschaften/anmelden/">Vereinslogin · Anmelden</a>
       <a class="underline underline-offset-4" href="/meisterschaften/meine-spiele/">Meine Spiele</a>
       <a id="championship-admin" hidden class="underline underline-offset-4" href="/meisterschaften/admin/">Verwaltung</a>
     </div>

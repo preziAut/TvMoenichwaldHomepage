@@ -41,7 +41,22 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
     return { id: championshipId, version: 0 };
   }
 
-  const championship = await statement('SELECT version,status,phase_two FROM championships WHERE id=?', id)
+  if (operation === 'loeschen' || operation === 'wiederherstellen') {
+    if (body.confirm !== true || !Number.isSafeInteger(body.version)) invalid('Bitte bestätige die Aktion.');
+    const guard = crypto.randomUUID();
+    const deleting = operation === 'loeschen';
+    await db.batch([
+      statement(`INSERT INTO championship_write_preconditions SELECT ?, EXISTS (
+        SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=?
+          AND (c.deleted_at IS NULL)=? AND u.user_id=? AND u.role='admin' AND u.active=1)`,
+        guard, id, body.version as number, Number(deleting), actorId),
+      statement(`UPDATE championships SET deleted_at=${deleting ? 'CURRENT_TIMESTAMP' : 'NULL'},
+        version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?`, id),
+      statement('DELETE FROM championship_write_preconditions WHERE id=?', guard),
+    ]);
+    return { id, version: Number(body.version) + 1 };
+  }
+  const championship = await statement('SELECT version,status,phase_two FROM championships WHERE id=? AND deleted_at IS NULL', id)
     .first<{ version: number; status: string; phase_two: string }>();
   if (operation === 'einstellungen') {
     if (!championship || body.version !== championship.version) throw new AdminInputError('Die Meisterschaft wurde geändert. Bitte lade sie erneut.');
@@ -60,7 +75,7 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
     const guard = crypto.randomUUID();
     await db.batch([
       statement(`INSERT INTO championship_write_preconditions SELECT ?, EXISTS (
-        SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=?
+        SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=? AND c.deleted_at IS NULL
           AND u.user_id=? AND u.role='admin' AND u.active=1)`, guard, id, championship.version, actorId),
       statement(`UPDATE championships SET title=?,season=?,description=?,starts_on=?,ends_on=?,phase_two=?,visibility=?,published=?,
         allow_submissions=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?`, title, Number(start.slice(0, 4)), description,
@@ -78,7 +93,7 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
     .all<Entry & { display_name: string }>()).results;
   const guard = crypto.randomUUID();
   const batch = [statement(`INSERT INTO championship_write_preconditions SELECT ?, EXISTS (
-    SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=? AND c.status='draft'
+    SELECT 1 FROM championships c, championship_memberships u WHERE c.id=? AND c.version=? AND c.status='draft' AND c.deleted_at IS NULL
       AND u.user_id=? AND u.role='admin' AND u.active=1)`, guard, id, revision, actorId)];
 
   if (operation === 'teilnehmer') {

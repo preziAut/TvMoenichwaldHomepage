@@ -23,7 +23,7 @@ export async function onRequest({ request, env }: { request: Request; env: { DB?
       JOIN championship_stages s ON s.championship_id=m.championship_id AND s.phase=m.phase
       LEFT JOIN championship_players a ON a.id=m.home LEFT JOIN championship_players b ON b.id=m.away
       LEFT JOIN championship_submissions r ON r.match_id=m.id AND r.status='pending' AND r.match_version=m.version
-      WHERE c.published=1 AND (m.home=? OR m.away=?) ORDER BY c.starts_on DESC,m.phase,m.round LIMIT 200`)
+      WHERE c.published=1 AND c.deleted_at IS NULL AND (m.home=? OR m.away=?) ORDER BY c.starts_on DESC,m.phase,m.round LIMIT 200`)
       .bind(Number(actor.canSubmit), actor.userId, actor.playerId, actor.playerId, actor.playerId).all();
     return reply(results);
   } catch {

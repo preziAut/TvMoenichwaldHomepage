@@ -30,11 +30,13 @@ export async function saveGroupResult<Statement>(db: Database<Statement>, actor:
       LEFT JOIN championship_players p ON p.id=l.player_id
       WHERE m.id=? AND m.championship_id=? AND m.phase=? AND m.version=?
         AND m.home=? AND m.away=?
-        AND s.status='active' AND s.kind=? AND u.active=1 AND u.role=?
+        AND c.deleted_at IS NULL AND s.kind=? AND u.active=1 AND u.role=?
+        AND (s.status='active' OR (?='correct' AND u.role='admin' AND s.status='closed'
+          AND m.status='confirmed' AND c.status IN ('finished','archived')))
         AND (u.role='admin' OR (c.published=1 AND c.allow_submissions=1 AND l.can_submit=1
           AND l.player_id=? AND p.active=1 AND l.player_id IN (m.home,m.away)))
     )`, batchId, actor.userId, match.id, match.championshipId, match.phase, match.version,
-  match.home, match.away, match.category, actor.role, actor.playerId)];
+  match.home, match.away, match.category, actor.role, action.kind, actor.playerId)];
 
   if (match.category === 'knockout') {
     if (!bracket?.some(fixture => fixture.id === match.id && fixture.version === match.version)) {

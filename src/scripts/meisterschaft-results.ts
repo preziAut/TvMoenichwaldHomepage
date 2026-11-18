@@ -1,13 +1,14 @@
+import { championshipButton } from './meisterschaft-buttons.ts';
 import { validateScore } from '../../championships/domain/competition.ts';
 
 type Score = [number, number][];
 export type AdminMatch = {
   id: string; phase: number; home_name: string | null; away_name: string | null; score: Score | null;
-  status: string; version: number; editable: number; proposal: string | null;
+  status: string; version: number; editable: number; correctable?: number; proposal: string | null;
 };
 
 const labels: Record<string, string> = { open: 'Offen', submitted: 'Gemeldet', disputed: 'Strittig', confirmed: 'Bestätigt', completed: 'Abgeschlossen' };
-const buttonClass = 'min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white disabled:opacity-60';
+const buttonClass = championshipButton.primary;
 function element<K extends keyof HTMLElementTagNameMap>(tag: K, text: string, classes = '') {
   const node = document.createElement(tag);
   node.textContent = text;
@@ -25,10 +26,13 @@ export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
   const proposed = match.proposal ? JSON.parse(match.proposal) as Score : null;
   const shown = match.score ?? proposed;
   if (shown) card.append(element('p', shown.map(set => set.join(':')).join(', '), 'mt-2 font-semibold'));
-  if (!match.editable || !match.home_name || !match.away_name || match.status === 'completed') return card;
+  if ((!match.editable && !match.correctable) || !match.home_name || !match.away_name || match.status === 'completed') return card;
 
   const form = element('form', '', 'mt-4 grid gap-3');
   form.method = 'post';
+  if (!match.editable && match.phase === 1) {
+    form.append(element('p', 'Die Gruppentabelle wird neu berechnet. Gespielte Folgepartien behalten ihre Paarungen.', 'text-sm text-[#4c5d52]'));
+  }
   const message = element('p', '', 'text-sm');
   message.setAttribute('role', 'status');
   const correction = match.status !== 'open';
@@ -55,7 +59,7 @@ export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
   const save = element('button', correction ? 'Ergebnis korrigieren' : 'Ergebnis speichern', buttonClass);
   form.append(save);
   if (proposed) {
-    const confirm = element('button', 'Gemeldetes Ergebnis bestätigen', 'min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold');
+    const confirm = element('button', 'Gemeldetes Ergebnis bestätigen', championshipButton.secondary);
     confirm.type = 'button';
     confirm.onclick = () => void send('bestaetigen', 'POST', {}, confirm);
     form.append(confirm);
@@ -90,6 +94,10 @@ export function resultCard(match: AdminMatch, refresh: () => Promise<void>) {
     void send(correction ? 'admin-korrektur' : 'ergebnis', correction ? 'PATCH' : 'POST', { score, reason: reason.value.trim() }, save);
   };
   form.append(message);
-  card.append(form);
+  if (!match.editable && match.correctable) {
+    const edit = element('details', '', 'mt-3 border-t border-[#d9dbd0] pt-3');
+    edit.append(element('summary', 'Korrektur öffnen', 'cursor-pointer text-sm font-semibold underline underline-offset-4'), form);
+    card.append(edit);
+  } else card.append(form);
   return card;
 }

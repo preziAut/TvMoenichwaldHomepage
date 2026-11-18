@@ -9,7 +9,7 @@ import { championshipSessions } from '../championships/server/sessions.ts';
 for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship through the ${phaseTwo} phase`, async () => {
   const sqlite = new DatabaseSync(':memory:');
   try {
-    for (const file of ['0001_competition.sql', '0002_sessions.sql', '0005_contact_keys.sql']) sqlite.exec(readFileSync(
+    for (const file of ['0001_competition.sql', '0002_sessions.sql', '0005_contact_keys.sql', '0006_championship_trash.sql']) sqlite.exec(readFileSync(
       new URL(`../championships/migrations/${file}`, import.meta.url), 'utf8'));
     const db = { prepare: sql => ({ bind: (...args) => ({
       first: async () => sqlite.prepare(sql).get(...args) ?? null,
@@ -24,7 +24,7 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     const origin = 'https://verein.test';
     function call(handler, path, { cookie = '', data, referer = origin } = {}) {
       return handler({ env: { DB: db }, request: new Request(`${origin}/api/${path}`, {
-        method: data ? 'POST' : 'GET', headers: { Cookie: cookie, Origin: referer, 'Content-Type': 'application/json' },
+        method: data ? path.endsWith('/admin-korrektur') ? 'PATCH' : 'POST' : 'GET', headers: { Cookie: cookie, Origin: referer, 'Content-Type': 'application/json' },
         body: data && JSON.stringify(data),
       }) });
     }
@@ -96,5 +96,20 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     assert.equal((await call(competitions, `${base}/einstellungen`, { cookie: admin, data: settings })).status, 422);
     assert.equal((await call(competitions, `${base}/einstellungen`, { cookie: admin,
       data: { ...settings, version: 6, phaseTwo: phaseTwo === 'knockout' ? 'placement' : 'knockout' } })).status, 422);
+    const game = after.matches.find(item => item.phase === (phaseTwo === 'knockout' ? 2 : 1));
+    assert.equal(game.editable, 0);
+    assert.equal(game.correctable, 1);
+    const correction = { version: game.version, score: [[6, 2], [6, 2]], reason: 'Tippfehler' };
+    assert.equal((await call(results, `spiele/${game.id}/admin-korrektur`, { cookie: one, data: correction })).status, 403);
+    await ok(results, `spiele/${game.id}/admin-korrektur`, { cookie: admin, data: correction });
+    assert.deepEqual((await ok(competitions, base, { cookie: admin })).matches.find(item => item.id === game.id).score, correction.score);
+    await ok(competitions, `${base}/loeschen`, { cookie: admin, data: { version: 6, confirm: true } });
+    assert.equal((await call(competitions, base, { cookie: admin })).status, 404);
+    assert.equal((await call(results, `spiele/${game.id}/admin-korrektur`, { cookie: admin, data: correction })).status, 404);
+    assert.equal((await call(competitions, 'meisterschaften/papierkorb')).status, 401);
+    const trash = await ok(competitions, 'meisterschaften/papierkorb', { cookie: admin });
+    assert.equal(trash[0].id, tournament.id);
+    await ok(competitions, `${base}/wiederherstellen`, { cookie: admin, data: { version: trash[0].version, confirm: true } });
+    assert.deepEqual((await ok(competitions, base, { cookie: admin })).matches.find(item => item.id === game.id).score, correction.score);
   } finally { sqlite.close(); }
 });

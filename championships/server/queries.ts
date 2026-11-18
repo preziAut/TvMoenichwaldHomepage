@@ -25,7 +25,7 @@ type Match = {
   id: string; phase: number; group_position: number | null; round: number; bracket_position: number | null;
   home: string | null; away: string | null; home_name: string | null; away_name: string | null;
   scheduled_at: string | null; winner: string | null;
-  status?: string; version?: number; editable?: number; proposal?: string | null;
+  status?: string; version?: number; editable?: number; correctable?: number; proposal?: string | null;
 };
 
 export function publicChampionshipReader(db: QueryDatabase, actor: Actor | null = null) {
@@ -34,11 +34,12 @@ export function publicChampionshipReader(db: QueryDatabase, actor: Actor | null 
   }
   const admin = actor?.active && actor.role === 'admin';
   const fields = `id, title, season, description, status, phase_two, starts_on, ends_on${admin ? ', version, visibility, published, allow_submissions' : ''}`;
-  const visible = actor?.active && actor.role === 'admin' ? '1=1' :
-    `status <> 'draft' AND published = 1${actor?.active ? '' : " AND visibility = 'public'"}`;
+  const visible = admin ? 'deleted_at IS NULL' :
+    `deleted_at IS NULL AND status <> 'draft' AND published = 1${actor?.active ? '' : " AND visibility = 'public'"}`;
 
   return {
     list: () => all<Championship>(`SELECT ${fields} FROM championships WHERE ${visible} ORDER BY starts_on DESC, id LIMIT 100`),
+    trash: () => admin ? all<Championship>(`SELECT ${fields} FROM championships WHERE deleted_at IS NOT NULL ORDER BY deleted_at DESC LIMIT 100`) : [],
     async detail(id: string) {
       const eligible = `championship_id IN (SELECT id FROM championships WHERE id = ? AND ${visible})`;
       // One D1 transaction keeps visibility, fixtures and their official sets on the same snapshot.
@@ -52,6 +53,8 @@ export function publicChampionshipReader(db: QueryDatabase, actor: Actor | null 
           CASE WHEN m.status IN ('confirmed', 'completed') THEN winner END AS winner${admin ? `,
           m.status, m.version, EXISTS(SELECT 1 FROM championship_stages s WHERE s.championship_id=m.championship_id
             AND s.phase=m.phase AND s.status='active') AS editable,
+          (m.status='confirmed' AND EXISTS(SELECT 1 FROM championships c WHERE c.id=m.championship_id
+            AND c.status IN ('finished','archived'))) AS correctable,
           (SELECT score FROM championship_submissions r WHERE r.match_id=m.id AND r.match_version=m.version AND r.status='pending') AS proposal` : ''}
           FROM championship_matches m LEFT JOIN championship_players h ON h.id = home
           LEFT JOIN championship_players a ON a.id = away WHERE ${eligible}

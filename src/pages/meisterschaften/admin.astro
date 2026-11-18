@@ -1,4 +1,5 @@
 ---
+import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
 import Layout from '../../layouts/Layout.astro';
 import SectionContainer from '../../components/ui/SectionContainer.astro';
 ---
@@ -10,11 +11,11 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     <section id="admin-login" class="my-5 max-w-xl rounded-xl border border-[#d9dbd0] bg-white p-5" aria-labelledby="admin-login-title">
       <h2 id="admin-login-title" class="text-xl font-bold">Vereinslogin</h2>
       <p class="my-3">Melde dich mit einem Admin-Konto an, um Meisterschaften zu verwalten.</p>
-      <a id="admin-login-link" class="inline-flex min-h-11 items-center rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white!" href="/meisterschaften/anmelden/">Als Admin anmelden</a>
+      <a id="admin-login-link" class={championshipButton.primary} href="/meisterschaften/anmelden/">Als Admin anmelden</a>
     </section>
     <div id="admin-workspace" hidden>
     <label id="existing-label" hidden>Vorhandene Meisterschaft öffnen<select id="existing" class="mt-2 block w-full max-w-lg rounded-lg border border-[#9fa995] p-3"><option value="">Bitte auswählen</option></select></label>
-    <button id="new-draft" type="button" hidden class="mb-4 min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Neue Meisterschaft</button>
+    <button id="new-draft" type="button" hidden class:list={[championshipButton.secondary, 'mb-4']}>Neue Meisterschaft</button>
     <div class="grid gap-5 lg:grid-cols-2">
       <form id="create" class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 class="mb-4 text-xl font-bold">Neue Meisterschaft</h2>
@@ -22,7 +23,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         <label>Beginn<input name="startsOn" type="date" required /></label>
         <label>Folgephase<select name="phaseTwo" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="placement">Platzierungsgruppen</option><option value="knockout">K.-o.-Runde</option></select></label>
         <label>Sichtbarkeit<select name="visibility" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"><option value="club">Vereinsintern</option><option value="public">Öffentlich</option></select></label>
-        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Entwurf anlegen</button>
+        <button class={championshipButton.primary}>Entwurf anlegen</button>
       </form>
       <form id="championship-settings" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 class="mb-4 text-xl font-bold">Meisterschaftseinstellungen</h2>
@@ -37,38 +38,41 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         <label><input name="published" type="checkbox" /> Spielplan und Ergebnisse freigeben</label>
         <p class="mb-4 text-sm text-[#4c5d52]">Öffentlich: für alle sichtbar. Vereinsintern: nur für angemeldete Mitglieder. Ohne Freigabe sehen nur Admins die Meisterschaft. Entwürfe bleiben bis zum Start verborgen.</p>
         <label><input name="allowSubmissions" type="checkbox" /> Ergebnismeldungen durch Spieler zulassen</label>
-        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Einstellungen speichern</button>
+        <div class="flex flex-wrap gap-2">
+          <button class={championshipButton.primary}>Einstellungen speichern</button>
+          <button id="delete-championship" type="button" class={championshipButton.danger}>Meisterschaft löschen</button>
+        </div>
         <p id="settings-status" role="status" class="mt-2 text-sm"></p>
       </form>
       <div id="setup" hidden class="space-y-4 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 id="draft-title" class="text-xl font-bold"></h2>
         <form id="reuse-player">
           <label>Vorhandenen Kontakt auswählen<select id="available-players" name="playerId" required class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"></select></label>
-          <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white disabled:opacity-50">Kontakt zur Meisterschaft hinzufügen</button>
+          <button class={championshipButton.primary}>Kontakt zur Meisterschaft hinzufügen</button>
         </form>
         <form id="player">
           <h3 class="mb-3 font-semibold">Neuen Kontakt anlegen</h3>
           <label>Vorname<input name="firstName" required maxlength="70" /></label>
           <label>Nachname<input name="lastName" required maxlength="70" /></label>
-          <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Teilnehmer hinzufügen</button>
+          <button class={championshipButton.secondary}>Teilnehmer hinzufügen</button>
         </form>
         <form id="seeds">
           <fieldset><legend class="mb-3 font-semibold">Setzliste <span id="participant-count" class="font-normal"></span></legend><div id="seed-rows"></div></fieldset>
-          <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Setzliste speichern</button>
+          <button class={championshipButton.secondary}>Setzliste speichern</button>
         </form>
         <form id="draw">
           <label>Anzahl Gruppen<input name="groupCount" type="number" min="1" max="16" required value="2" /></label>
           <label><input id="manual-toggle" type="checkbox" /> Gruppen manuell zuweisen</label>
           <div id="manual-groups" hidden></div>
           <label id="manual-reason" hidden>Begründung bei ungleich großen Gruppen<input name="reason" maxlength="500" /></label>
-          <button class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Auslosung ansehen</button>
+          <button class={championshipButton.secondary}>Auslosung ansehen</button>
         </form>
         <ol id="preview" class="space-y-2"></ol>
         <form id="start" hidden>
           <label><input name="publish" type="checkbox" /> Spielplan und Ergebnisse ab Start freigeben</label>
           <p class="mb-4 text-sm text-[#4c5d52]">Die gewählte Sichtbarkeit gilt. Du kannst die Freigabe später ändern.</p>
           <label><input name="allowSubmissions" type="checkbox" /> Ergebnismeldung durch Spieler zulassen</label>
-          <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Vorrunde starten</button>
+          <button class={championshipButton.primary}>Vorrunde starten</button>
         </form>
       </div>
       <form id="phase" hidden class="min-w-0 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6 lg:col-span-2">
@@ -78,9 +82,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         <p id="phase-preview" class="my-3 whitespace-pre-line text-sm"></p>
         <div id="knockout-preview" class="min-w-0 space-y-4"></div>
         <div class="flex flex-wrap gap-2">
-          <button name="action" value="preview" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Folgephase ansehen</button>
-          <button name="action" value="start" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Folgephase starten</button>
-          <button name="action" value="finish" class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Meisterschaft abschließen</button>
+          <button name="action" value="preview" class={championshipButton.secondary}>Folgephase ansehen</button>
+          <button name="action" value="start" class={championshipButton.secondary}>Folgephase starten</button>
+          <button name="action" value="finish" class={championshipButton.primary}>Meisterschaft abschließen</button>
         </div>
       </form>
       <section id="result-panel" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6 lg:col-span-2" aria-labelledby="results-title">
@@ -91,7 +95,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       <form id="invite" class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 class="mb-4 text-xl font-bold">Vereinszugang einladen</h2>
         <label>E-Mail-Adresse<input name="email" type="email" required maxlength="254" /></label>
-        <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Einladung senden</button>
+        <button class={championshipButton.primary}>Einladung senden</button>
       </form>
       <form id="access" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
         <h2 class="mb-4 text-xl font-bold">Spieler freischalten</h2>
@@ -99,17 +103,22 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
         <label>Spielerprofil<select name="playerId" id="players" class="mt-2 block w-full rounded-lg border border-[#9fa995] p-3"></select></label>
         <label><input name="canSubmit" type="checkbox" /> Ergebnismeldungen erlauben</label>
         <div class="flex flex-wrap gap-2">
-          <button name="action" value="link" class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Zuordnung speichern</button>
-          <button name="action" value="disable" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Konto sperren</button>
-          <button name="action" value="enable" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Konto entsperren</button>
+          <button name="action" value="link" class={championshipButton.primary}>Zuordnung speichern</button>
+          <button name="action" value="disable" class={championshipButton.secondary}>Konto sperren</button>
+          <button name="action" value="enable" class={championshipButton.secondary}>Konto entsperren</button>
         </div>
       </form>
     </div>
+    <details id="championship-trash" class="mt-5 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+      <summary class="cursor-pointer font-semibold">Papierkorb</summary>
+      <ul id="trashed-events" class="mt-4 grid gap-3"></ul>
+    </details>
     </div>
   </SectionContainer>
 </Layout>
 
 <script>
+  import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
   import { resultCard, type AdminMatch } from '../../scripts/meisterschaft-results.ts';
   import { bracketRound, renderBracket, type BracketMatch } from '../../scripts/meisterschaft-bracket.ts';
   const status = document.querySelector<HTMLElement>('#admin-status')!;
@@ -125,6 +134,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   const createForm = document.querySelector<HTMLFormElement>('#create')!;
   const settings = document.querySelector<HTMLFormElement>('#championship-settings')!;
   const settingsStatus = document.querySelector('#settings-status')!;
+  const trash = document.querySelector<HTMLDetailsElement>('#championship-trash')!;
+  const trashList = document.querySelector('#trashed-events')!;
+  const deleteButton = document.querySelector<HTMLButtonElement>('#delete-championship')!;
   const newDraft = document.querySelector<HTMLButtonElement>('#new-draft')!;
   const resultPanel = document.querySelector<HTMLElement>('#result-panel')!;
   const results = document.querySelector<HTMLElement>('#result-list')!;
@@ -268,7 +280,9 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     if (!response.ok) return;
     const items: Summary[] = await response.json();
     const editable = items.filter(item => typeof item.version === 'number');
-    existing.replaceChildren(new Option('Bitte auswählen', ''), ...editable.map(item => new Option(item.title, item.id)));
+    const labels: Record<string, string> = { draft: 'Entwurf', groups_active: 'Vorrunde', phase_active: 'Folgephase', finished: 'Abgeschlossen', archived: 'Archiviert' };
+    existing.replaceChildren(new Option('Bitte auswählen', ''), ...editable.map(item =>
+      new Option(labels[item.status] ? `${item.title} · ${labels[item.status]}` : item.title, item.id)));
     document.querySelector<HTMLElement>('#existing-label')!.hidden = editable.length === 0;
     existing.onchange = () => {
       const item = editable.find(row => row.id === existing.value);
@@ -320,6 +334,55 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       settingsStatus.textContent = 'Einstellungen gespeichert.';
     } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Speichern fehlgeschlagen.'; }
   });
+  async function loadTrash() {
+    const response = await fetch('/api/meisterschaften/papierkorb');
+    if (!response.ok) throw new Error('Der Papierkorb konnte nicht geladen werden.');
+    const deleted: Summary[] = await response.json();
+    trashList.replaceChildren(...deleted.map(item => {
+      const row = document.createElement('li');
+      row.className = 'flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#f5f3ec] p-3';
+      const name = document.createElement('span');
+      name.className = 'break-words font-semibold';
+      name.textContent = item.title;
+      const restore = document.createElement('button');
+      restore.type = 'button';
+      restore.className = championshipButton.secondary;
+      restore.textContent = 'Wiederherstellen';
+      restore.onclick = async () => {
+        restore.disabled = true;
+        try {
+          await post(`/${item.id}/wiederherstellen`, { version: item.version, confirm: true });
+          await Promise.all([listCompetitions(), loadTrash()]);
+          status.textContent = 'Meisterschaft wiederhergestellt. Die bisherige Sichtbarkeit gilt wieder.';
+          status.scrollIntoView({ block: 'nearest' });
+        } catch (error) { status.textContent = error instanceof Error ? error.message : 'Wiederherstellen fehlgeschlagen.'; }
+        finally { restore.disabled = false; }
+      };
+      row.append(name, restore);
+      return row;
+    }));
+    if (!deleted.length) {
+      const row = document.createElement('li');
+      row.textContent = 'Der Papierkorb ist leer.';
+      trashList.append(row);
+    }
+  }
+  trash.addEventListener('toggle', () => {
+    if (trash.open) loadTrash().catch(error => { trashList.textContent = error.message; });
+  });
+  deleteButton.onclick = async () => {
+    if (!draft || !confirm('Diese Meisterschaft in den Papierkorb verschieben? Sie verschwindet aus der Übersicht und kann wiederhergestellt werden.')) return;
+    const { id, version } = draft;
+    deleteButton.disabled = true;
+    try {
+      await post(`/${id}/loeschen`, { version, confirm: true });
+      newDraft.click();
+      await listCompetitions();
+      if (trash.open) await loadTrash();
+      status.textContent = 'Meisterschaft in den Papierkorb verschoben.';
+    } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Löschen fehlgeschlagen.'; }
+    finally { deleteButton.disabled = false; }
+  };
   bind('player', async fields => { await addParticipant(fields); await loadAccounts(); });
   bind('seeds', async fields => {
     if (!draft) return;
@@ -377,7 +440,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     intro.textContent = 'Wähle einen anderen Eintrag, um zwei Plätze zu tauschen. Beim Start wird die angezeigte Aufstellung übernommen.';
     const reset = document.createElement('button');
     reset.type = 'button';
-    reset.className = 'min-h-11 justify-self-start rounded-lg border border-[#173a2e] px-4 py-2 font-semibold';
+    reset.className = `${championshipButton.secondary} justify-self-start`;
     reset.textContent = 'Automatische Aufstellung wiederherstellen';
     editor.append(intro, reset);
     const note = document.createElement('p');
