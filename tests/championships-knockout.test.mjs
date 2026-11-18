@@ -21,3 +21,14 @@ test('byes immediately fill the correct semifinal slot without awarding a score'
   assert.equal(bracket.find(match => match.round === 2 && match.position === 1).home, 'a1');
   assert.equal(bracket.find(match => match.round === 3).home, null);
 });
+
+test('manual seeding swaps only qualified players and recalculates moved byes', () => {
+  const groups = [['a1', 'a2'], ['b1', 'b2']];
+  const bracket = createKnockout(groups, 3, false, [null, 'b1', 'a1', 'a2']);
+  assert.deepEqual(bracket.map(match => [match.home, match.away, match.winner]), [
+    [null, 'b1', 'b1'], ['a1', 'a2', null], ['b1', null, null],
+  ]);
+  assert.throws(() => createKnockout(groups, 3, false, ['b1', 'b1', 'a1', null]), /genau einmal/);
+  assert.throws(() => createKnockout(groups, 3, false, ['b2', 'b1', 'a1', null]), /genau einmal/);
+  assert.throws(() => createKnockout(groups, 3, true), /vier Qualifikanten/);
+});

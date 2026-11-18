@@ -9,11 +9,23 @@ type Fixture = {
   state: 'open' | 'bye' | 'submitted' | 'disputed' | 'confirmed';
 };
 
-export function createKnockout(rankings: readonly (readonly string[])[], count: number, bronze: boolean): Fixture[] {
+export function createKnockout(rankings: readonly (readonly string[])[], count: number, bronze: boolean, slots?: unknown): Fixture[] {
+  if (bronze && count < 4) throw new Error('Das Spiel um Platz 3 benötigt mindestens vier Qualifikanten.');
   const opening = knockoutOpening(rankings, count);
   const rounds = opening[0].rounds;
-  const bracket: Fixture[] = opening.map(({ position, home, away }) => ({ round: 1, position, home, away,
-    winner: away ? null : home, state: away ? 'open' : 'bye' }));
+  const defaults = opening.flatMap(match => [match.home, match.away]);
+  const players = new Set(defaults.filter(player => player !== null));
+  if (slots !== undefined && (!Array.isArray(slots) || slots.length !== defaults.length ||
+    slots.some(player => player !== null && !players.has(player)) ||
+    new Set(slots.filter(player => player !== null)).size !== players.size || slots.filter(player => player !== null).length !== players.size)) {
+    throw new Error('Die K.-o.-Aufstellung muss jeden Qualifikanten genau einmal enthalten.');
+  }
+  const order = (slots ?? defaults) as (string | null)[];
+  const bracket: Fixture[] = opening.map(({ position }, index) => {
+    const [home, away] = order.slice(index * 2, index * 2 + 2);
+    if (home === null && away === null) throw new Error('Eine Paarung kann nicht aus zwei Freilosen bestehen.');
+    return { round: 1, position, home, away, winner: home && away ? null : home ?? away, state: home && away ? 'open' : 'bye' };
+  });
   for (let round = 2; round <= rounds; round++) {
     for (let position = 1; position <= 2 ** (rounds - round); position++) {
       bracket.push({ round, position, home: null, away: null, winner: null, state: 'open' });

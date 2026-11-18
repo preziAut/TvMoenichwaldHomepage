@@ -19,6 +19,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
 </Layout>
 
 <script>
+  import { renderBracket } from '../../scripts/meisterschaft-bracket.ts';
   const status = document.querySelector<HTMLElement>('#status')!;
   const events = document.querySelector<HTMLElement>('#events')!;
   const detail = document.querySelector<HTMLElement>('#detail')!;
@@ -140,15 +141,13 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       detail.append(make('h3', 'Gruppentabellen und Vorrundenspiele', 'text-xl font-bold'), shortcuts, tables);
     }
     if (finals.length) {
-      const list = make('ul', '', 'divide-y divide-[#d9dbd0]');
+      const names = new Map<string, string>();
       for (const match of finals) {
-        const label = match === final ? 'Finale · ' : (match.round === lastRound ? 'Spiel um Platz 3 · ' : '');
-        list.append(matchRow(match, label));
+        if (match.home && match.home_name) names.set(match.home, match.home_name);
+        if (match.away && match.away_name) names.set(match.away, match.away_name);
       }
-      const section = make('details', '', 'rounded-xl border border-[#d9dbd0] bg-white');
-      section.open = true;
-      section.append(make('summary', `K.-o.-Runde · ${finals.length} Begegnungen`, 'cursor-pointer px-4 py-3 font-semibold'), list);
-      detail.append(section);
+      detail.append(make('h3', 'K.-o.-Turnierbaum', 'text-xl font-bold'), renderBracket(finals.map(match => ({ ...match,
+        position: match.bracket_position! })), names));
     }
     detail.hidden = false;
   }

@@ -49,11 +49,12 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
           <button class="min-h-11 rounded-lg bg-[#173a2e] px-4 py-2 font-semibold text-white">Vorrunde starten</button>
         </form>
       </div>
-      <form id="phase" hidden class="rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6">
+      <form id="phase" hidden class="min-w-0 rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6 lg:col-span-2">
         <h2 class="mb-4 text-xl font-bold">Turnierphase verwalten</h2>
         <label>Anzahl Qualifikanten (K.-o.)<input name="qualifiers" type="number" min="2" max="8" value="4" /></label>
         <label><input name="bronze" type="checkbox" /> Spiel um Platz 3</label>
         <p id="phase-preview" class="my-3 whitespace-pre-line text-sm"></p>
+        <div id="knockout-preview" class="min-w-0 space-y-4"></div>
         <div class="flex flex-wrap gap-2">
           <button name="action" value="preview" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Folgephase ansehen</button>
           <button name="action" value="start" class="min-h-11 rounded-lg border border-[#173a2e] px-4 py-2 font-semibold">Folgephase starten</button>
@@ -87,12 +88,14 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
 
 <script>
   import { resultCard, type AdminMatch } from '../../scripts/meisterschaft-results.ts';
+  import { bracketRound, renderBracket, type BracketMatch } from '../../scripts/meisterschaft-bracket.ts';
   const status = document.querySelector<HTMLElement>('#admin-status')!;
   const setup = document.querySelector<HTMLElement>('#setup')!;
   const preview = document.querySelector<HTMLOListElement>('#preview')!;
   const start = document.querySelector<HTMLFormElement>('#start')!;
   const existing = document.querySelector<HTMLSelectElement>('#existing')!;
   const phaseForm = document.querySelector<HTMLFormElement>('#phase')!;
+  const knockoutPreview = document.querySelector<HTMLElement>('#knockout-preview')!;
   const seedRows = document.querySelector('#seed-rows')!;
   const manualToggle = document.querySelector<HTMLInputElement>('#manual-toggle')!;
   const manualGroups = document.querySelector<HTMLElement>('#manual-groups')!;
@@ -106,6 +109,7 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
   let entries: Entry[] = [];
   let contacts: Contact[] = [];
   let draft: { id: string; version: number } | null = null;
+  let knockoutSlots: (string | null)[] | undefined;
   let suggested: { groupCount: number; seed: number; groups?: string[][]; reason?: string } | null = null;
 
   function bind(id: string, run: (data: FormData) => Promise<void>) {
@@ -142,6 +146,8 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
       button.hidden = item.status === 'phase_active' ? button.value !== 'finish' : button.value === 'finish';
     }
     document.querySelector('#phase-preview')!.textContent = '';
+    knockoutSlots = undefined;
+    knockoutPreview.replaceChildren();
     resultPanel.hidden = item.status === 'draft';
     results.replaceChildren();
     history.replaceState(null, '', `?id=${encodeURIComponent(item.id)}`);
@@ -292,18 +298,105 @@ import SectionContainer from '../../components/ui/SectionContainer.astro';
     document.querySelector<HTMLElement>('#results-title')?.focus();
     await listCompetitions();
   });
+  type PhasePreview = { bracket: BracketMatch[]; positions: string[][]; rankings: { id: string; name?: string }[][] };
+  function showKnockout(bracket: BracketMatch[], names: Map<string, string>, config: { qualifiers: number; bronze: boolean }) {
+    const opening = bracket.filter(match => match.round === 1);
+    const slots = opening.flatMap(match => [match.home, match.away]);
+    const choices = [...new Set(slots)];
+    const editor = document.createElement('div');
+    editor.className = 'grid gap-3';
+    const intro = document.createElement('p');
+    intro.className = 'text-sm';
+    intro.textContent = 'Wähle einen anderen Eintrag, um zwei Plätze zu tauschen. Beim Start wird die angezeigte Aufstellung übernommen.';
+    const reset = document.createElement('button');
+    reset.type = 'button';
+    reset.className = 'min-h-11 justify-self-start rounded-lg border border-[#173a2e] px-4 py-2 font-semibold';
+    reset.textContent = 'Automatische Aufstellung wiederherstellen';
+    editor.append(intro, reset);
+    const note = document.createElement('p');
+    note.setAttribute('role', 'status');
+    note.className = 'text-sm text-red-800';
+    const selects: HTMLSelectElement[] = [];
+    async function update(next?: (string | null)[], focus?: number) {
+      if (!draft) return;
+      const id = draft.id;
+      const startButton = phaseForm.querySelector<HTMLButtonElement>('button[value="start"]')!;
+      const configFields = [...phaseForm.querySelectorAll<HTMLInputElement>('input[name="qualifiers"], input[name="bronze"]')];
+      const previewButton = phaseForm.querySelector<HTMLButtonElement>('button[value="preview"]')!;
+      startButton.disabled = true;
+      previewButton.disabled = true;
+      configFields.forEach(input => { input.disabled = true; });
+      reset.disabled = true;
+      selects.forEach(select => { select.disabled = true; });
+      note.textContent = '';
+      try {
+        const result: PhasePreview = await post(`/${id}/folgephase/vorschau`, { version: draft.version, ...config, knockoutSlots: next });
+        if (draft?.id !== id) return;
+        knockoutSlots = next;
+        showKnockout(result.bracket, names, config);
+        if (focus !== undefined) knockoutPreview.querySelectorAll('select')[focus]?.focus();
+      } catch (error) {
+        for (const [index, select] of selects.entries()) select.value = slots[index] ?? '';
+        note.textContent = error instanceof Error ? error.message : 'Die Aufstellung konnte nicht geändert werden.';
+      } finally {
+        startButton.disabled = false;
+        previewButton.disabled = false;
+        configFields.forEach(input => { input.disabled = false; });
+        reset.disabled = false;
+        selects.forEach(select => { select.disabled = false; });
+      }
+    }
+    reset.onclick = () => void update();
+    opening.forEach((match, index) => {
+      const row = document.createElement('fieldset');
+      row.className = 'grid grid-cols-2 gap-2 rounded-lg border border-[#d9dbd0] p-3';
+      const title = document.createElement('legend');
+      title.className = 'px-1 text-sm font-semibold';
+      title.textContent = `${bracketRound(Math.max(...bracket.map(item => item.round)) - 1)} ${match.position}`;
+      row.append(title);
+      for (let side = 0; side < 2; side++) {
+        const offset = index * 2 + side;
+        const select = document.createElement('select');
+        select.className = 'min-w-0 rounded-lg border border-[#9fa995] bg-white px-2 py-2 text-sm';
+        select.setAttribute('aria-label', `${title.textContent}, Platz ${side + 1}`);
+        select.replaceChildren(...choices.map(player => new Option(player ? names.get(player) ?? player : 'Freilos', player ?? '')));
+        select.value = slots[offset] ?? '';
+        select.onchange = () => {
+          const next = [...slots];
+          const selected = select.value || null;
+          if (selected === next[offset]) return;
+          const other = next.indexOf(selected);
+          [next[offset], next[other]] = [next[other], next[offset]];
+          void update(next, offset);
+        };
+        selects.push(select);
+        row.append(select);
+      }
+      editor.append(row);
+    });
+    knockoutPreview.replaceChildren(renderBracket(bracket, names), editor, note);
+  }
+  phaseForm.addEventListener('change', event => {
+    if (event.target instanceof HTMLInputElement && ['qualifiers', 'bronze'].includes(event.target.name)) {
+      knockoutSlots = undefined;
+      knockoutPreview.replaceChildren();
+      document.querySelector('#phase-preview')!.textContent = '';
+    }
+  });
   bind('phase', async fields => {
     if (!draft) return;
     const action = fields.get('action');
     const endpoint = action === 'preview' ? 'folgephase/vorschau' : action === 'start' ? 'folgephase/starten' : 'abschliessen';
     if (action !== 'preview' && !confirm('Diese Turnierphase verbindlich ändern?')) return;
-    const response = await post(`/${draft.id}/${endpoint}`, { version: draft.version,
-      qualifiers: Number(fields.get('qualifiers')), bronze: fields.has('bronze'), confirm: action !== 'preview' });
+    const config = { qualifiers: Number(fields.get('qualifiers')), bronze: fields.has('bronze') };
+    const response = await post(`/${draft.id}/${endpoint}`, { version: draft.version, ...config,
+      knockoutSlots, confirm: action !== 'preview' });
     if (action === 'preview') {
       const groups = response.rankings.flat() as { id: string; name?: string }[];
       const names = new Map(groups.map(row => [row.id, row.name ?? row.id]));
       const rows = (response.positions as string[][]).map((players, index) => `Gruppe ${index + 1} · ${players.map(player => names.get(player)).join(', ')}`);
       document.querySelector('#phase-preview')!.textContent = rows.length ? rows.join('\n') : `${response.bracket.length} Begegnungen im K.-o.-Spielplan.`;
+      if (response.bracket.length) showKnockout(response.bracket, names, config);
     } else {
       await openCompetition({ ...response, id: draft.id, title: document.querySelector('#draft-title')!.textContent ?? '',
         status: action === 'start' ? 'phase_active' : 'finished' });

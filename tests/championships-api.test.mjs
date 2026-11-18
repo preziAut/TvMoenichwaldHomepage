@@ -74,9 +74,11 @@ for (const phaseTwo of ['placement', 'knockout']) test(`API runs a championship 
     const second = await ok(competitions, `${base}/folgephase/vorschau`, { cookie: admin, data: phaseData });
     if (phaseTwo === 'placement') assert.deepEqual(second.positions.map(group => group.length), [1, 1]);
     else assert.equal(second.bracket.length, 1);
-    await ok(competitions, `${base}/folgephase/starten`, { cookie: admin, data: { ...phaseData, confirm: true } });
+    const knockoutSlots = phaseTwo === 'knockout' ? [second.bracket[0].away, second.bracket[0].home] : undefined;
+    await ok(competitions, `${base}/folgephase/starten`, { cookie: admin, data: { ...phaseData, knockoutSlots, confirm: true } });
     if (phaseTwo === 'knockout') {
       const final = (await ok(competitions, base)).matches.find(item => item.phase === 2);
+      assert.deepEqual([final.home, final.away], knockoutSlots);
       await ok(results, `spiele/${final.id}/ergebnis`, { cookie: admin, data: { score, version: 0 } });
       const settled = (await ok(competitions, base)).matches.find(item => item.id === final.id);
       assert.equal(settled.winner, final.home);

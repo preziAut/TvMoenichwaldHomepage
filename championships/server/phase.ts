@@ -49,7 +49,7 @@ export async function managePhase(db: AdminDatabase, actor: string, id: string, 
     if (tournament.phase_two === 'placement') positions = placementGroups(ordered);
     else {
       if (typeof data.qualifiers !== 'number') throw new AdminInputError('Anzahl der Qualifikanten angeben.');
-      try { bracket = createKnockout(ordered, data.qualifiers, data.bronze === true); }
+      try { bracket = createKnockout(ordered, data.qualifiers, data.bronze === true, data.knockoutSlots); }
       catch (error) { throw new AdminInputError(error instanceof Error ? error.message : 'Ungültige Qualifikation.'); }
     }
     if (action === 'preview') return { positions, bracket,
@@ -83,7 +83,8 @@ export async function managePhase(db: AdminDatabase, actor: string, id: string, 
     }
   }
   batch.push(q(`INSERT INTO championship_decisions (id,championship_id,actor_id,kind,decision,reason) VALUES (?,?,?,?,?,?)`,
-    crypto.randomUUID(), id, actor, action, JSON.stringify({ ordered, positions, qualifiers: data.qualifiers ?? null }), reason || 'Phase geprüft und bestätigt.'),
+    crypto.randomUUID(), id, actor, action, JSON.stringify({ ordered, positions, qualifiers: data.qualifiers ?? null,
+      knockoutOpening: bracket.filter(match => match.round === 1).map(({ home, away }) => [home, away]) }), reason || 'Phase geprüft und bestätigt.'),
   q('UPDATE championships SET status=?,version=version+1,updated_at=CURRENT_TIMESTAMP WHERE id=?', phase === 1 ? 'phase_active' : 'finished', id),
   q('DELETE FROM championship_write_preconditions WHERE id=?', guard));
   await db.batch(batch);
