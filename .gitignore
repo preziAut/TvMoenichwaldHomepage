@@ -15,6 +15,7 @@ __pycache__/
 
 # Private booking rehearsal data never belongs in the public repository.
 booking/.private/
+booking/src/pages-driver.generated.mjs
 *.sqlite
 *.sqlite3
 *.db

@@ -45,7 +45,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
     if (!user) return reply({ error: 'LOGIN_REQUIRED' }, 401);
     const body = method === 'GET' ? {} : await parseBody(request);
     if (!body) return reply({ error: 'INVALID_BODY' }, 422);
-    const { connectBookingDatabase } = await import('../../../booking/src/database.ts');
+    const { connectBookingDatabase } = await import('../../../booking/src/pages-driver.generated.mjs');
     const { database, close } = connectBookingDatabase(connection.connectionString);
     try {
       return await database.transaction(async tx => {
