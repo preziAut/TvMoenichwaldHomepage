@@ -1,0 +1,75 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { UsersRound, UserRound, GraduationCap, Smile, Clock3, Landmark, Info, ArrowUpRight } from 'lucide-astro';
+
+const seasons = [
+  { title: 'Familienkarte', detail: 'Ehe- oder Lebenspartner samt nicht erwerbstätiger Kinder', price: '105,–', Icon: UsersRound },
+  { title: 'Einzelkarte Erwachsene', detail: '', price: '65,–', Icon: UserRound },
+  { title: 'Einzelkarte Schüler, Studenten, Lehrlinge', detail: 'ab 14 Jahre', price: '50,–', Icon: GraduationCap },
+  { title: 'Kinderkarten', detail: 'bis 14 Jahre', price: '20,–', Icon: Smile },
+];
+const contributions = [
+  ['Erwachsene', '8,–'],
+  ['Jugendliche, Schüler, Studenten, Lehrlinge 15–18 Jahre', '4,–'],
+  ['Kinder (nur wenn Eltern keinen Beitrag bezahlen)', '4,–'],
+];
+---
+
+<Layout title="Mitgliedschaft" description="Informationen zu Saisonkarten, Platzgebühr und Mitgliedsbeiträgen beim Tennisverein Mönichwald.">
+  <header class="border-b border-stone-200 bg-stone-100/70 py-12 sm:py-16">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+      <p class="mb-5 text-xs font-bold uppercase tracking-widest text-orange-800"><a href="/">Startseite</a> / Unser Verein</p>
+      <h1 class="font-['Instrument_Serif',Georgia,serif] text-5xl tracking-tight text-[#173a2e] sm:text-6xl">Mitgliedschaft</h1>
+    </div>
+  </header>
+  <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-16">
+    <aside aria-label="Hinweis zu den Preisangaben" class="mb-9 flex gap-3 rounded-2xl border border-orange-200 bg-orange-50 p-5 text-sm leading-relaxed text-orange-950">
+      <Info size={22} class="mt-0.5 shrink-0" aria-hidden="true" />
+      <p>Die folgenden Beiträge stammen aus dem bisherigen Webauftritt. Dort unterscheiden sich die Preisangaben. Bitte die aktuell gültigen Beträge vor einer Überweisung beim Verein erfragen.</p>
+    </aside>
+    <section aria-labelledby="season-title">
+      <div class="mb-5 flex flex-wrap items-center justify-between gap-4">
+        <h2 id="season-title" class="text-2xl font-bold tracking-tight text-[#173a2e]">Preisliste für Saisonkarten</h2>
+        <a href="/kontakt/" class="inline-flex min-h-11 items-center gap-2 rounded-xl bg-orange-700 px-4 py-2 text-sm font-bold text-white no-underline transition-colors hover:bg-orange-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700">Aktuelle Beiträge erfragen <ArrowUpRight size={18} aria-hidden="true" /></a>
+      </div>
+      <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {seasons.map(({title,detail,price,Icon}) => (
+          <article class="flex flex-col rounded-2xl border border-stone-200 bg-white p-6">
+            <span class="mb-5 flex size-12 items-center justify-center rounded-xl bg-orange-50 text-orange-800"><Icon size={25} aria-hidden="true" /></span>
+            <h3 class="text-lg font-bold leading-snug text-slate-900">{title}</h3>
+            {detail && <p class="mt-2 text-sm leading-relaxed text-slate-600">{detail}</p>}
+            <p class="mt-auto pt-7 text-3xl font-bold tracking-tight text-[#173a2e]"><span class="mr-1 text-lg font-medium">€</span>{price}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+    <div class="mt-6 grid gap-6 lg:grid-cols-[1fr_1.4fr]">
+      <section class="rounded-2xl bg-[#173a2e] p-6 text-white sm:p-8" aria-labelledby="hour-title">
+        <Clock3 size={28} class="mb-5 text-orange-200" aria-hidden="true" />
+        <h2 id="hour-title" class="text-xl font-bold">Platzgebühr pro Stunde</h2>
+        <p class="mt-4 text-4xl font-bold tracking-tight">€ 10,–</p>
+        <a href="/reservierung/" class="mt-7 inline-flex min-h-11 items-center gap-3 rounded-xl bg-orange-700 px-4 py-2 text-sm font-bold text-white no-underline transition-colors hover:bg-orange-800 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-200">Platz reservieren <ArrowUpRight size={18} aria-hidden="true" /></a>
+      </section>
+      <section class="rounded-2xl border border-stone-200 bg-white p-6 sm:p-8" aria-labelledby="contributions-title">
+        <h2 id="contributions-title" class="mb-4 text-xl font-bold text-slate-900">Mitgliedsbeiträge Sportverein</h2>
+        <dl class="divide-y divide-stone-200">
+          {contributions.map(([label,price]) => (
+            <div class="flex items-baseline justify-between gap-5 py-4">
+              <dt class="text-sm leading-relaxed text-slate-600">{label}</dt>
+              <dd class="shrink-0 whitespace-nowrap text-lg font-bold text-[#173a2e]">€ {price}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    </div>
+    <section class="mt-6 rounded-2xl border border-stone-200 bg-stone-100 p-6 sm:p-8" aria-labelledby="payment-title">
+      <div class="flex items-center gap-3">
+        <Landmark size={26} class="shrink-0 text-orange-800" aria-hidden="true" />
+        <h2 id="payment-title" class="text-xl font-bold text-slate-900">Bankverbindung</h2>
+      </div>
+      <p class="mt-4 max-w-2xl text-sm leading-relaxed text-slate-600">Bitte um Überweisung der Beiträge für die Saisonkarten und Mitgliedsbeiträge auf das Konto des Tennisverein Mönichwald</p>
+      <p class="mt-5 text-sm font-semibold text-slate-900">Raiba Nördl. Oststeiermark</p>
+      <p class="mt-2 break-words text-base font-bold tracking-wide text-[#173a2e] sm:text-xl"><span class="mr-2 text-xs font-semibold text-slate-600">IBAN</span>AT63 3802 3000 0266 2815</p>
+    </section>
+  </div>
+</Layout>

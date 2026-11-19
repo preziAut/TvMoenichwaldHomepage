@@ -10,7 +10,7 @@ test('public buttons switch independently and the pilot uses the legacy public l
   const env = { BOOKING_MOENICHWALD_MODE: 'pilot', BOOKING_WALDBACH_MODE: 'live' };
   assert.equal((await call('/moenichwald/start', env)).headers.get('Location'), 'https://platz.tv-moenichwald.at/');
   assert.equal((await call('/waldbach/start', env)).headers.get('Location'), '/platzbuchung/?standort=waldbach');
-  assert.equal((await call('/waldbach/start')).headers.get('Location'), '/ep3wa');
+  assert.equal((await call('/waldbach/start')).headers.get('Location'), 'https://www.tv-moenichwald.at/ep3wa');
 });
 
 test('disabled booking, missing pilot storage and anonymous users cannot reach the calendar', async () => {

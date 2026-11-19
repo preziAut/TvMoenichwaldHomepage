@@ -30,7 +30,7 @@ export async function onRequest({ request, env }: { request: Request; env: Env }
   if (action === 'start') {
     if (mode === 'live') return sendTo(`/platzbuchung/?standort=${site}`);
     if (site === 'moenichwald') return sendTo('https://platz.tv-moenichwald.at/');
-    return sendTo('/ep3wa');
+    return sendTo('https://www.tv-moenichwald.at/ep3wa');
   }
   if (mode === 'legacy') return reply({ error: 'BOOKING_DISABLED' }, 404);
   const connection = mode === 'pilot' ? env.BOOKING_PILOT_DB : env.BOOKING_DB;
