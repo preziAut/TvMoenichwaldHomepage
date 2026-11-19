@@ -2,11 +2,13 @@
 import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
 import Layout from '../../layouts/Layout.astro';
 import SectionContainer from '../../components/ui/SectionContainer.astro';
+import ChampionshipNavigation from '../../components/ChampionshipNavigation.astro';
 ---
 <Layout title="Meisterschaften verwalten">
   <SectionContainer aria-labelledby="title">
     <a href="/meisterschaften/" class="text-sm font-semibold underline underline-offset-4">Einzelmeisterschaften</a>
     <h1 id="title" class="my-4 text-4xl font-bold text-[#173a2e]">Meisterschaften verwalten</h1>
+    <ChampionshipNavigation />
     <p id="admin-status" role="status" class="my-4 text-sm"></p>
     <section id="admin-login" class="my-5 max-w-xl rounded-xl border border-[#d9dbd0] bg-white p-5" aria-labelledby="admin-login-title">
       <h2 id="admin-login-title" class="text-xl font-bold">Vereinslogin</h2>

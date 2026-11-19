@@ -2,11 +2,13 @@
 import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
 import Layout from '../../layouts/Layout.astro';
 import SectionContainer from '../../components/ui/SectionContainer.astro';
+import ChampionshipNavigation from '../../components/ChampionshipNavigation.astro';
 ---
 <Layout title="Meine Spiele">
   <SectionContainer aria-labelledby="title">
     <a href="/meisterschaften/" class="text-sm font-semibold underline underline-offset-4">Einzelmeisterschaften</a>
     <h1 id="title" class="mt-4 text-4xl font-bold text-[#173a2e]">Meine Spiele</h1>
+    <ChampionshipNavigation />
     <a id="my-matches-login" hidden href="/meisterschaften/anmelden/" class:list={[championshipButton.primary, 'mt-3']}>Anmelden</a>
     <p id="match-status" class="mt-4" role="status">Spiele werden geladen …</p>
     <div id="match-list" class="mt-5 grid gap-4 sm:grid-cols-2"></div>
