@@ -21,7 +21,7 @@ function readScore(value: unknown): Score | null {
   return value as Score;
 }
 
-export async function parseBody(request: Request) {
+export async function parseBody(request: Request, maxBytes = 4096) {
   const input = request.body?.getReader();
   if (!input) return null;
   const decoder = new TextDecoder('utf-8', { fatal: true });
@@ -32,7 +32,7 @@ export async function parseBody(request: Request) {
       const read = await input.read();
       if (read.done) break;
       bytes += read.value.byteLength;
-      if (bytes > 4096) { await input.cancel(); return null; }
+      if (bytes > maxBytes) { await input.cancel(); return null; }
       value += decoder.decode(read.value, { stream: true });
     }
     const parsed = JSON.parse(value + decoder.decode());

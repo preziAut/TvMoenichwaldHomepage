@@ -62,14 +62,14 @@ try {
       sample();
     });
 
-    for (const name of ['Meine Spiele', 'Verwaltung', 'Vereinskonto', 'Meine Spiele', 'Vereinskonto']) {
+    for (const name of ['Meine Spiele', 'Sekturniere', 'Verwaltung', 'Vereinskonto', 'Meine Spiele', 'Vereinskonto']) {
       await nav.getByRole('link', { name, exact: true }).click();
       await page.waitForFunction(label => {
         const active = document.querySelector('[data-championship-access][aria-current="page"]');
         return active?.textContent.trim() === label;
       }, name);
       await page.waitForLoadState('networkidle');
-      assert.equal(await nav.locator('a:visible').count(), 3);
+      assert.equal(await nav.locator('a:visible').count(), 4);
       assert.equal(await nav.locator('[aria-current="page"] svg').count(), 2);
       assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
       if (name === 'Meine Spiele') await page.getByText('Dir sind noch keine Begegnungen zugeordnet.').waitFor();
@@ -93,7 +93,7 @@ try {
       return window.navigationSamples;
     });
     assert.ok(samples.length > 10);
-    assert.equal(Math.min(...samples.map(sample => sample.visible)), 3, 'No navigation cards disappear during a transition');
+    assert.equal(Math.min(...samples.map(sample => sample.visible)), 4, 'No navigation cards disappear during a transition');
     assert.ok(Math.max(...samples.map(sample => sample.height)) - Math.min(...samples.map(sample => sample.height)) < 1,
       'Navigation height is stable');
     assert.ok(Math.max(...samples.map(sample => sample.top)) - Math.min(...samples.map(sample => sample.top)) < 1,
@@ -104,12 +104,12 @@ try {
     await nav.getByRole('link', { name: 'Meine Spiele' }).click();
     await page.waitForFunction(() => location.pathname === '/meisterschaften/meine-spiele/');
     await page.waitForLoadState('networkidle');
-    assert.equal(await nav.locator('a:visible').count(), 2);
+    assert.equal(await nav.locator('a:visible').count(), 3);
     role = null;
     await nav.getByRole('link', { name: 'Vereinskonto' }).click();
     await page.waitForFunction(() => location.pathname === '/meisterschaften/anmelden/');
     await page.waitForLoadState('networkidle');
-    assert.equal(await nav.locator('a:visible').count(), 1, 'Expired sessions remove protected navigation links');
+    assert.equal(await nav.locator('a:visible').count(), 2, 'Expired sessions remove protected navigation links');
     assert.deepEqual(errors, []);
     console.log(`${scenario.width}px / reduced motion ${scenario.reducedMotion}: stable navigation, forms, history and permissions passed.`);
     await page.close();

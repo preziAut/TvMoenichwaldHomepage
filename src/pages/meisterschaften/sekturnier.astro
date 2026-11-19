@@ -1,0 +1,103 @@
+---
+import { Wine, Trophy, Shuffle, Info, History, ExternalLink } from 'lucide-astro';
+import ChampionshipLayout from '../../layouts/ChampionshipLayout.astro';
+import { championshipButton as button } from '../../scripts/meisterschaft-buttons.ts';
+---
+<ChampionshipLayout title="Sekturniere" backHref="/turniere/" backLabel="Alle Turniere">
+  <div id="sekt-root">
+    <p id="sekt-message" role="status" aria-live="polite" class="mb-5 text-sm text-slate-700">Turnierdaten werden geladen …</p>
+    <div id="sekt-list" class="grid gap-4 sm:grid-cols-2"></div>
+    <section id="sekt-detail" hidden>
+      <header class="rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
+        <div class="flex flex-wrap items-start justify-between gap-4">
+          <div class="flex items-start gap-3">
+            <span class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-orange-50 text-orange-800"><Wine size={27} aria-hidden="true" /></span>
+            <div><p id="sekt-event-status" class="text-sm font-semibold text-orange-800"></p><h2 id="sekt-title" class="mt-1 break-words text-2xl font-bold text-[#173a2e] sm:text-3xl"></h2></div>
+          </div>
+          <a id="sekt-share" class={button.secondary} href="#" target="_blank" rel="noopener">Öffentliche Ansicht <ExternalLink size={16} class="ml-2" aria-hidden="true" /></a>
+        </div>
+        <p class="mt-4 text-sm leading-relaxed text-slate-600">Neue Doppelpartner in jeder Runde. Ein Team besteht aus je einer Person aus Topf 1 und Topf 2. Für die Einzelrangliste zählen nur die gewonnenen Games des gewerteten Einsatzes.</p>
+      </header>
+
+      <section aria-labelledby="sekt-ranking-title" class="mt-6 overflow-hidden rounded-2xl border border-stone-200 bg-white">
+        <div class="flex flex-wrap items-center justify-between gap-3 p-5">
+          <h2 id="sekt-ranking-title" class="flex items-center gap-2 text-xl font-bold"><Trophy size={23} class="text-orange-800" aria-hidden="true" /> Einzelrangliste</h2>
+          <span id="sekt-ranking-status" class="rounded-full bg-stone-100 px-3 py-1 text-xs font-semibold text-slate-600"></span>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm tabular-nums">
+            <thead class="border-y border-stone-200 bg-stone-50"><tr><th scope="col" class="px-4 py-3">Rang</th><th scope="col" class="px-3 py-3">Name</th><th scope="col" class="px-3 py-3 text-right">Games</th><th scope="col" class="px-3 py-3 text-right">Gewertete Einsätze</th></tr></thead>
+            <tbody id="sekt-ranking"></tbody>
+          </table>
+        </div>
+        <p id="sekt-refresh" role="status" class="border-t border-stone-200 px-5 py-3 text-xs text-slate-500"></p>
+      </section>
+
+      <section class="mt-7" aria-labelledby="sekt-round-title">
+        <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 id="sekt-round-title" class="text-xl font-bold">Runden und Partien</h2>
+          <label class="mb-0">Runde <select id="sekt-round-select" class="ml-2 rounded-lg border border-stone-300 bg-white px-3 py-2"></select></label>
+        </div>
+        <p id="sekt-round-note" class="mb-4 text-sm leading-relaxed text-slate-600"></p>
+        <div id="sekt-matches" class="grid gap-4 lg:grid-cols-2"></div>
+      </section>
+
+      <section id="sekt-admin" hidden class="mt-8 space-y-6" aria-label="Sekturnier verwalten">
+        <div class="flex flex-wrap gap-3">
+          <button id="sekt-prepare" class={button.primary}><Shuffle size={18} class="mr-2" aria-hidden="true" /> Nächste Runde vorbereiten</button>
+          <button id="sekt-close-round" class={button.primary}>Runde abschließen</button>
+          <button id="sekt-finish" class={button.primary}>Turnier abschließen</button>
+        </div>
+        <form id="sekt-draw" hidden class="rounded-2xl border border-stone-200 bg-white p-5 sm:p-7">
+          <h2 class="mb-4 flex items-center gap-2 text-xl font-bold"><Shuffle size={22} class="text-orange-800" aria-hidden="true" /> Runde vorbereiten</h2>
+          <label class="max-w-xs">Games-Vorgabe<input type="number" name="games" required min="1" step="1" /></label>
+          <p class="mb-4 flex gap-2 text-sm leading-relaxed text-slate-600"><Info size={19} class="shrink-0" aria-hidden="true" /> Aushilfen spielen einen zusätzlichen Einsatz außerhalb ihrer persönlichen Wertung. Welcher Einsatz zählt, steht bereits mit der Auslosung fest. Die Spiele einer Aushilfe müssen nacheinander stattfinden.</p>
+          <div id="sekt-pot-players" class="grid gap-3 sm:grid-cols-2"></div>
+          <p id="sekt-helper-need" role="status" class="my-4 rounded-xl bg-orange-50 p-4 text-sm font-semibold text-orange-950"></p>
+          <button id="sekt-draw-submit" class={button.primary}>Verbindlich auslosen</button>
+          <button id="sekt-discard" type="button" class:list={[button.secondary, 'mt-2 sm:mt-0']}>Vorbereitung verwerfen</button>
+        </form>
+        <button id="sekt-redraw" class={button.secondary} hidden>Runde zur erneuten Vorbereitung zurücksetzen</button>
+        <details id="sekt-participant-panel" class="rounded-2xl border border-stone-200 bg-white p-5" open>
+          <summary class="cursor-pointer text-lg font-bold">Teilnehmende</summary>
+          <form id="sekt-reuse" class="mt-5 grid items-end gap-3 sm:grid-cols-2">
+            <label class="mb-0">Vorhandenen Kontakt auswählen<select name="playerId" required class="mt-2 block w-full rounded-lg border border-stone-300 bg-white p-3"></select></label>
+            <label class="mb-0">Topf<select name="pot" class="mt-2 block w-full rounded-lg border border-stone-300 bg-white p-3"><option value="1">Topf 1</option><option value="2">Topf 2</option></select></label>
+            <button class={button.primary}>Teilnehmer hinzufügen</button>
+          </form>
+          <details class="mt-5 border-t border-stone-200 pt-4">
+            <summary class="cursor-pointer font-semibold">Neuen Kontakt anlegen</summary>
+            <form id="sekt-new-contact" class="mt-4 grid gap-3 sm:grid-cols-2">
+              <label>Vorname<input name="firstName" required maxlength="70" autocomplete="given-name" /></label>
+              <label>Nachname<input name="lastName" required maxlength="70" autocomplete="family-name" /></label>
+              <label>Topf<select name="pot" class="mt-2 block w-full rounded-lg border border-stone-300 bg-white p-3"><option value="1">Topf 1</option><option value="2">Topf 2</option></select></label>
+              <button class:list={[button.primary, 'self-end mb-4']}>Kontakt anlegen und hinzufügen</button>
+            </form>
+          </details>
+          <ul id="sekt-entries" class="mt-5 divide-y divide-stone-200"></ul>
+        </details>
+        <details class="rounded-2xl border border-stone-200 bg-white p-5">
+          <summary class="cursor-pointer text-lg font-bold">Turniereinstellungen</summary>
+          <form id="sekt-settings" class="mt-5 max-w-xl">
+            <label>Titel<input name="title" required maxlength="120" /></label>
+            <label>Beginn<input name="startsOn" type="date" required /></label>
+            <label>Games-Standard<input name="defaultGames" type="number" min="1" step="1" required /></label>
+            <label><input name="published" type="checkbox" /> Öffentliche Tabelle und Spielplan freigeben</label>
+            <button class={button.primary}>Einstellungen speichern</button>
+          </form>
+          <div class="mt-5 flex flex-wrap gap-3 border-t border-stone-200 pt-5">
+            <button id="sekt-delete" class={button.danger}>Turnier löschen</button>
+            <button id="sekt-restore" class={button.secondary} hidden>Turnier wiederherstellen</button>
+          </div>
+        </details>
+        <details id="sekt-history-panel" class="rounded-2xl border border-stone-200 bg-white p-5">
+          <summary class="flex cursor-pointer items-center gap-2 text-lg font-bold"><History size={21} aria-hidden="true" /> Änderungshistorie</summary>
+          <div id="sekt-history" class="mt-4 space-y-3"></div>
+        </details>
+      </section>
+    </section>
+  </div>
+</ChampionshipLayout>
+<script>
+  import '../../scripts/sekturnier.ts';
+</script>

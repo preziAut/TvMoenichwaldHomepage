@@ -2,7 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import hero from '../data/hero.json';
 import { getCollection } from 'astro:content';
-import { Trophy, CalendarDays, ArrowUpRight } from 'lucide-astro';
+import { Trophy, CalendarDays, ArrowUpRight, Wine } from 'lucide-astro';
 
 const featured = new Map([
   ['/beitraege/einzelmeisterschaft-2024-764/', 'Einzelmeisterschaft'],
@@ -18,7 +18,7 @@ const archive = (await getCollection('beitraege')).filter(post => featured.has(p
       <h1 id="tournament-title">Turniere &amp;<br />Meisterschaften</h1>
       <p>Einzel, Doppel und Mixed im Tennisverein Mönichwald.</p>
       <div class="mt-7 grid gap-3">
-        {[{href:'/meisterschaften/',label:'Einzelmeisterschaften',Icon:Trophy},{href:'/veranstaltungen/',label:'Veranstaltungskalender',Icon:CalendarDays}].map(({href,label,Icon}) => (
+        {[{href:'/meisterschaften/',label:'Einzelmeisterschaften',Icon:Trophy},{href:'/meisterschaften/sekturnier/',label:'Sekturniere',Icon:Wine},{href:'/veranstaltungen/',label:'Veranstaltungskalender',Icon:CalendarDays}].map(({href,label,Icon}) => (
           <a href={href} class="flex min-h-20 items-center gap-3 rounded-2xl border border-white/25 bg-white/10 p-4 text-white no-underline transition-colors hover:border-orange-300 hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-300">
             <span class="flex size-12 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-orange-900"><Icon size={27} aria-hidden="true" /></span>
             <span class="min-w-0 text-sm font-bold sm:text-base">{label}</span><ArrowUpRight size={22} class="ml-auto shrink-0 text-orange-200" aria-hidden="true" />

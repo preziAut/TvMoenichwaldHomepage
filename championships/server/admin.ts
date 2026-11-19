@@ -99,27 +99,10 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
   if (operation === 'teilnehmer') {
     if (entries.length >= 32) invalid('Höchstens 32 Teilnehmer sind möglich.');
     const existing = string(body.playerId, 80);
-    const first = contactName(string(body.firstName, 70));
-    const last = contactName(string(body.lastName, 70));
-    if (!existing && (!first || !last)) invalid('Vor- und Nachname eingeben oder einen Spieler auswählen.');
     if (existing && entries.some(entry => entry.id === existing)) invalid('Dieser Spieler nimmt bereits teil.');
-    const playerId = existing || crypto.randomUUID();
-    if (existing) {
-      if (!await statement('SELECT id FROM championship_players WHERE id=? AND active=1', existing).first()) {
-        invalid('Dieser Kontakt ist nicht mehr aktiv.');
-      }
-    } else {
-      const key = contactKey(first, last);
-      const { results: legacy } = await statement('SELECT first_name,last_name FROM championship_players WHERE contact_key IS NULL').all<{
-        first_name: string; last_name: string;
-      }>();
-      if (legacy.some(contact => contactKey(contact.first_name, contact.last_name) === key) ||
-          await statement('SELECT id FROM championship_players WHERE contact_key=?', key).first()) {
-        invalid('Diesen Kontakt gibt es bereits. Bitte unter „Vorhandenen Kontakt auswählen“ hinzufügen.');
-      }
-      batch.push(statement('INSERT INTO championship_players (id,first_name,last_name,display_name,contact_key) VALUES (?,?,?,?,?)',
-        playerId, first, last, string(body.displayName, 140) || `${first} ${last}`, key));
-    }
+    const contact = await prepareParticipant(db, body);
+    const playerId = contact.playerId;
+    batch.push(...contact.statements);
     batch.push(statement(`INSERT INTO championship_entries (championship_id,player_id) VALUES
       (?,(SELECT id FROM championship_players WHERE id=? AND active=1))`, id, playerId));
   } else if (operation === 'setzliste') {
@@ -163,4 +146,32 @@ export async function administerChampionship(db: AdminDatabase, actorId: string,
     statement('DELETE FROM championship_write_preconditions WHERE id=?', guard));
   await db.batch(batch);
   return { id, version: revision + 1 };
+}
+
+export async function prepareParticipant(db: AdminDatabase, body: Record<string, unknown>) {
+  const statement = (sql: string, ...values: Value[]) => db.prepare(sql).bind(...values);
+  const statements: AdminStatement[] = [];
+  const existing = string(body.playerId, 80);
+  const first = contactName(string(body.firstName, 70));
+  const last = contactName(string(body.lastName, 70));
+  if (!existing && (!first || !last)) invalid('Vor- und Nachname eingeben oder einen Spieler auswählen.');
+  const playerId = existing || crypto.randomUUID();
+  if (existing) {
+    if (!await statement('SELECT id FROM championship_players WHERE id=? AND active=1', existing).first()) {
+      invalid('Dieser Kontakt ist nicht mehr aktiv.');
+    }
+  } else {
+    const key = contactKey(first, last);
+    const { results: legacy } = await statement('SELECT first_name,last_name FROM championship_players WHERE contact_key IS NULL').all<{
+      first_name: string; last_name: string;
+    }>();
+    if (legacy.some(contact => contactKey(contact.first_name, contact.last_name) === key) ||
+        await statement('SELECT id FROM championship_players WHERE contact_key=?', key).first()) {
+      invalid('Diesen Kontakt gibt es bereits. Bitte unter „Vorhandenen Kontakt auswählen“ hinzufügen.');
+    }
+    statements.push(statement('INSERT INTO championship_players (id,first_name,last_name,display_name,contact_key) VALUES (?,?,?,?,?)',
+      playerId, first, last, string(body.displayName, 140) || `${first} ${last}`, key));
+  }
+
+  return { playerId, statements };
 }

@@ -1,10 +1,11 @@
 ---
-import { UserRound, Swords, Settings2, ArrowUpRight } from 'lucide-astro';
+import { UserRound, Swords, Settings2, ArrowUpRight, Wine } from 'lucide-astro';
 
 const path = Astro.url.pathname.replace(/\/$/, '');
 const links = [
   { id: 'championship-login', href: '/meisterschaften/anmelden/', label: 'Vereinslogin · Anmelden', Icon: UserRound, access: 'public' },
   { id: 'championship-games', href: '/meisterschaften/meine-spiele/', label: 'Meine Spiele', Icon: Swords, access: 'member' },
+  { id: 'championship-sekt', href: '/meisterschaften/sekturnier/', label: 'Sekturniere', Icon: Wine, access: 'public' },
   { id: 'championship-admin', href: '/meisterschaften/admin/', label: 'Verwaltung', Icon: Settings2, access: 'admin' },
 ];
 ---
@@ -40,7 +41,7 @@ const links = [
     for (const link of links) {
       const access = link.dataset.championshipAccess;
       link.hidden = access === 'admin' ? role !== 'admin' : access === 'member' ? !signedIn : false;
-      if (access === 'public') link.querySelector('[data-navigation-label]')!.textContent =
+      if (link.id === 'championship-login') link.querySelector('[data-navigation-label]')!.textContent =
         signedIn ? 'Vereinskonto' : 'Vereinslogin · Anmelden';
       if (access === 'admin') {
         const id = url.searchParams.get('id');
