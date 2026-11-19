@@ -1,0 +1,21 @@
+---
+import { fade } from 'astro:transitions';
+import Layout from './Layout.astro';
+import SectionContainer from '../components/ui/SectionContainer.astro';
+import ChampionshipNavigation from '../components/ChampionshipNavigation.astro';
+
+interface Props { title: string; overview?: boolean }
+const { title, overview = false } = Astro.props;
+---
+<Layout title={title} championshipNavigation>
+  <SectionContainer aria-labelledby="title">
+    <a href={overview ? '/turniere/' : '/meisterschaften/'} class="text-sm font-semibold underline underline-offset-4">
+      {overview ? 'Alle Turniere' : 'Einzelmeisterschaften'}
+    </a>
+    <ChampionshipNavigation />
+    <div data-championship-page transition:name="championship-content" transition:animate={fade({ duration: '140ms' })}>
+      <h1 id="title" class="mb-6 text-3xl font-bold tracking-tight text-[#173a2e] sm:text-4xl">{title}</h1>
+      <slot />
+    </div>
+  </SectionContainer>
+</Layout>

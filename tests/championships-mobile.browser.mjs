@@ -31,7 +31,7 @@ try {
   page.once('dialog', dialog => dialog.accept());
   await page.getByRole('button', { name: 'Ergebnis melden' }).click();
   await page.getByText('Wartet auf Bestätigung').waitFor();
-  assert.deepEqual(sent, { version: 0, score: [[6, 3], [6, 4]] });
+  assert.deepEqual(sent, { version: 0, score: [[6, 3], [6, 4]], reason: '' });
   console.log('Mobile Ergebniseingabe bei 375 px erfolgreich.');
 } finally {
   await browser.close();

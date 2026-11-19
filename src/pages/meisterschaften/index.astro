@@ -1,169 +1,167 @@
 ---
-import ChampionshipNavigation from '../../components/ChampionshipNavigation.astro';
-import Layout from '../../layouts/Layout.astro';
-import SectionContainer from '../../components/ui/SectionContainer.astro';
+import ChampionshipLayout from '../../layouts/ChampionshipLayout.astro';
 ---
 
-<Layout title="Einzelmeisterschaften">
-  <SectionContainer aria-labelledby="title">
-    <a href="/turniere/" class="text-sm font-semibold underline underline-offset-4">Alle Turniere</a>
-    <h1 id="title" class="mt-4 font-['Instrument_Serif',Georgia,serif] text-5xl text-[#173a2e] sm:text-6xl">Einzelmeisterschaften</h1>
-    <ChampionshipNavigation />
+<ChampionshipLayout title="Einzelmeisterschaften" overview>
     <p id="status" class="mt-5 text-sm" role="status">Meisterschaften werden geladen …</p>
     <ul id="events" class="mt-6 grid gap-3 sm:grid-cols-2"></ul>
     <section id="detail" hidden class="mt-8 space-y-7" aria-label="Meisterschaft im Detail"></section>
-  </SectionContainer>
-</Layout>
+</ChampionshipLayout>
 
 <script>
   import { renderBracket } from '../../scripts/meisterschaft-bracket.ts';
-  const status = document.querySelector<HTMLElement>('#status')!;
-  const events = document.querySelector<HTMLElement>('#events')!;
-  const detail = document.querySelector<HTMLElement>('#detail')!;
-  const phases: Record<string, string> = { groups_active: 'Vorrunde', groups_closed: 'Vorrunde abgeschlossen',
-    phase_prepared: 'Folgephase vorbereitet', phase_active: 'Folgephase', finished: 'Abgeschlossen', archived: 'Archiv' };
-  const make = <K extends keyof HTMLElementTagNameMap>(tag: K, label: string, classes: string) => {
-    const element = document.createElement(tag);
-    element.textContent = label;
-    element.className = classes;
-    return element;
-  };
-
-  async function load(path: string) {
-    const response = await fetch(path, { headers: { Accept: 'application/json' } });
-    if (!response.ok) throw new Error();
-    return response.json();
-  }
-
-  async function render() {
-    const id = new URLSearchParams(location.search).get('id');
-    if (!id) {
-      const list: { id: string; title: string; season: number; status: string }[] = await load('/api/meisterschaften');
-      status.textContent = list.length ? '' : 'Derzeit sind keine Meisterschaften veröffentlicht.';
-      for (const event of list) {
-        const item = make('li', '', 'rounded-xl border border-[#d9dbd0] bg-white p-5');
-        const link = make('a', event.title, 'block text-xl font-semibold underline-offset-4 hover:underline');
-        link.href = `?id=${encodeURIComponent(event.id)}`;
-        item.append(link, make('p', `${event.season} · ${phases[event.status] ?? 'Entwurf'}`, 'mt-2 text-sm text-[#4c5d52]'));
-        events.append(item);
-      }
-      return;
-    }
-    type Row = { name: string; rank: number; tied: boolean; wins: number; losses: number;
-      setsFor: number; setsAgainst: number; gamesFor: number; gamesAgainst: number };
-    type Group = { phase: number; position: number; name: string; rows: Row[] };
-    type Match = { phase: number; round: number; group_position: number | null; bracket_position: number | null; home: string | null; away: string | null;
-      winner: string | null; home_name: string | null; away_name: string | null; score: [number, number][] | null };
-    const data: { championship: { title: string; description: string; status: string }; tables: Group[]; matches: Match[] } =
-      await load(`/api/meisterschaften/${encodeURIComponent(id)}`);
-    status.textContent = phases[data.championship.status] ?? 'Entwurf';
-    const back = make('a', 'Alle Einzelmeisterschaften', 'inline-block text-sm font-semibold underline underline-offset-4');
-    back.href = '/meisterschaften/';
-    detail.append(back, make('h2', data.championship.title, 'text-3xl font-bold break-words'));
-    if (data.championship.description) detail.append(make('p', data.championship.description, 'max-w-prose text-[#4c5d52]'));
-    const finals = data.matches.filter(match => match.phase === 2 && match.bracket_position !== null);
-    const lastRound = Math.max(0, ...finals.map(match => match.round));
-    const final = finals.find(match => match.round === lastRound && match.bracket_position === 1);
-    const bronze = finals.find(match => match.round === lastRound && match.bracket_position === 2);
-    const winnerName = (match?: Match) => match?.winner ? (match.winner === match.home ? match.home_name : match.away_name) : null;
-    const champion = winnerName(final);
-    if (champion && ['finished', 'archived'].includes(data.championship.status)) {
-      const runnerUp = final!.winner === final!.home ? final!.away_name : final!.home_name;
-      const podium = make('section', '', 'space-y-3');
-      const heading = make('h3', 'Podium', 'text-xl font-bold');
-      heading.id = 'podium-titel';
-      podium.setAttribute('aria-labelledby', heading.id);
-      const list = make('ol', '', 'grid list-none gap-3 p-0 sm:grid-cols-3');
-      const placements = [champion, runnerUp ?? 'Noch offen', winnerName(bronze) ?? (bronze ? 'Noch offen' : 'Nicht ausgespielt')];
-      for (const [index, name] of placements.entries()) {
-        const place = make('li', '', `min-w-0 rounded-xl border p-4 sm:p-5 ${index === 0
-          ? 'border-[#173a2e] bg-[#173a2e] text-white' : 'border-[#d9dbd0] bg-white text-[#173a2e]'}`);
-        place.append(make('p', `${index + 1}. Platz`, 'text-sm font-semibold'),
-          make('p', name, 'mt-2 break-words text-xl font-bold'));
-        list.append(place);
-      }
-      podium.append(heading, list);
-      detail.append(podium);
-    }
-    const formatPercent = new Intl.NumberFormat('de-AT', { style: 'percent', maximumFractionDigits: 2 });
-    const percentage = (won: number, lost: number) => won + lost ? formatPercent.format(won / (won + lost)) : '–';
-    const scoreText = (match: Match) => match.score?.map(set => set.join(':')).join(', ') ?? (match.winner ? 'Freilos' : 'Offen');
-    const matchRow = (match: Match, label = '') => {
-      const item = make('li', '', 'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 px-4 py-2.5 text-sm');
-      item.append(make('span', `${label}${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'}`, 'min-w-0 break-words'),
-        make('span', scoreText(match), 'text-right font-semibold tabular-nums'));
-      return item;
+  function initializeChampionships() {
+    const root = document.querySelector<HTMLElement>('[data-championship-page]');
+    if (!root?.querySelector('#events')) return;
+    const page = root;
+    const status = page.querySelector<HTMLElement>('#status')!;
+    const events = page.querySelector<HTMLElement>('#events')!;
+    const detail = page.querySelector<HTMLElement>('#detail')!;
+    const phases: Record<string, string> = { groups_active: 'Vorrunde', groups_closed: 'Vorrunde abgeschlossen',
+      phase_prepared: 'Folgephase vorbereitet', phase_active: 'Folgephase', finished: 'Abgeschlossen', archived: 'Archiv' };
+    const make = <K extends keyof HTMLElementTagNameMap>(tag: K, label: string, classes: string) => {
+      const element = document.createElement(tag);
+      element.textContent = label;
+      element.className = classes;
+      return element;
     };
-    const tables = make('div', '', 'grid gap-5');
-    const shortcuts = make('div', '', 'flex flex-wrap gap-2');
-    for (const group of data.tables) {
-      const anchor = `gruppe-${group.phase}-${group.position}`;
-      const title = `${group.phase === 1 ? 'Vorrunde' : 'Platzierungsrunde'} · ${group.name}`;
-      const jump = make('a', group.name, 'rounded-full border border-[#d9dbd0] bg-white px-3 py-2 text-sm font-semibold hover:bg-[#e9ece0]');
-      jump.href = `#${anchor}`;
-      shortcuts.append(jump);
-      const card = make('section', '', 'min-w-0 scroll-mt-6 rounded-xl border border-[#d9dbd0] bg-white');
-      card.id = anchor;
-      const heading = make('h3', title, 'px-4 py-4 text-lg font-bold sm:px-6');
-      heading.id = `${anchor}-titel`;
-      card.append(heading);
-      const scroll = make('div', '', 'overflow-x-auto');
-      scroll.tabIndex = 0;
-      scroll.setAttribute('role', 'region');
-      scroll.setAttribute('aria-labelledby', heading.id);
-      const table = make('table', '', 'w-full min-w-[38rem] border-collapse text-sm tabular-nums');
-      table.setAttribute('aria-labelledby', heading.id);
-      const head = make('thead', '', 'border-y border-[#d9dbd0] bg-[#f5f3ec]');
-      const columns = make('tr', '', '');
-      for (const [index, label] of ['Pos.', 'Spieler', 'Matches S/N', 'Sätze S/N', 'Satzquote', 'Games S/N', 'Gamequote'].entries()) {
-        const cell = make('th', label, `whitespace-nowrap px-3 py-3 font-semibold ${index < 2 ? 'text-left' : 'text-center'}`);
-        cell.scope = 'col';
-        columns.append(cell);
-      }
-      head.append(columns);
-      const body = make('tbody', '', '');
-      for (const row of group.rows) {
-        const item = make('tr', '', 'odd:bg-[#f8f8f5]');
-        const name = make('th', row.name, 'min-w-36 px-3 py-3 text-left font-semibold break-words');
-        name.scope = 'row';
-        if (row.tied) name.append(make('span', 'Gleichstand', 'block text-xs font-normal'));
-        item.append(make('td', String(row.rank), 'px-3 py-3'), name);
-        for (const value of [`${row.wins}–${row.losses}`, `${row.setsFor}–${row.setsAgainst}`, percentage(row.setsFor, row.setsAgainst),
-          `${row.gamesFor}–${row.gamesAgainst}`, percentage(row.gamesFor, row.gamesAgainst)]) {
-          item.append(make('td', value, 'whitespace-nowrap px-3 py-3 text-center font-semibold'));
+
+    async function load(path: string) {
+      const response = await fetch(path, { headers: { Accept: 'application/json' } });
+      if (!response.ok) throw new Error();
+      return response.json();
+    }
+
+    async function render() {
+      const id = new URLSearchParams(location.search).get('id');
+      if (!id) {
+        const list: { id: string; title: string; season: number; status: string }[] = await load('/api/meisterschaften');
+        status.textContent = list.length ? '' : 'Derzeit sind keine Meisterschaften veröffentlicht.';
+        for (const event of list) {
+          const item = make('li', '', 'rounded-xl border border-[#d9dbd0] bg-white p-5');
+          const link = make('a', event.title, 'block text-xl font-semibold underline-offset-4 hover:underline');
+          link.href = `?id=${encodeURIComponent(event.id)}`;
+          item.append(link, make('p', `${event.season} · ${phases[event.status] ?? 'Entwurf'}`, 'mt-2 text-sm text-[#4c5d52]'));
+          events.append(item);
         }
-        body.append(item);
+        return;
       }
-      table.append(head, body);
-      scroll.append(table);
-      card.append(scroll);
-      const matches = data.matches.filter(match => match.phase === group.phase && match.group_position === group.position);
-      if (matches.length) {
-        const schedule = make('details', '', 'border-t border-[#d9dbd0]');
-        const played = matches.filter(match => match.score).length;
-        schedule.append(make('summary', `Gruppenspiele · ${played} von ${matches.length} gespielt`, 'cursor-pointer px-4 py-3 text-sm font-semibold sm:px-6'));
-        const list = make('ul', '', 'divide-y divide-[#e9ece0]');
-        list.append(...matches.map(match => matchRow(match)));
-        schedule.append(list);
-        card.append(schedule);
+      type Row = { name: string; rank: number; tied: boolean; wins: number; losses: number;
+        setsFor: number; setsAgainst: number; gamesFor: number; gamesAgainst: number };
+      type Group = { phase: number; position: number; name: string; rows: Row[] };
+      type Match = { phase: number; round: number; group_position: number | null; bracket_position: number | null; home: string | null; away: string | null;
+        winner: string | null; home_name: string | null; away_name: string | null; score: [number, number][] | null };
+      const data: { championship: { title: string; description: string; status: string }; tables: Group[]; matches: Match[] } =
+        await load(`/api/meisterschaften/${encodeURIComponent(id)}`);
+      status.textContent = phases[data.championship.status] ?? 'Entwurf';
+      const back = make('a', 'Alle Einzelmeisterschaften', 'inline-block text-sm font-semibold underline underline-offset-4');
+      back.href = '/meisterschaften/';
+      detail.append(back, make('h2', data.championship.title, 'text-3xl font-bold break-words'));
+      if (data.championship.description) detail.append(make('p', data.championship.description, 'max-w-prose text-[#4c5d52]'));
+      const finals = data.matches.filter(match => match.phase === 2 && match.bracket_position !== null);
+      const lastRound = Math.max(0, ...finals.map(match => match.round));
+      const final = finals.find(match => match.round === lastRound && match.bracket_position === 1);
+      const bronze = finals.find(match => match.round === lastRound && match.bracket_position === 2);
+      const winnerName = (match?: Match) => match?.winner ? (match.winner === match.home ? match.home_name : match.away_name) : null;
+      const champion = winnerName(final);
+      if (champion && ['finished', 'archived'].includes(data.championship.status)) {
+        const runnerUp = final!.winner === final!.home ? final!.away_name : final!.home_name;
+        const podium = make('section', '', 'space-y-3');
+        const heading = make('h3', 'Podium', 'text-xl font-bold');
+        heading.id = 'podium-titel';
+        podium.setAttribute('aria-labelledby', heading.id);
+        const list = make('ol', '', 'grid list-none gap-3 p-0 sm:grid-cols-3');
+        const placements = [champion, runnerUp ?? 'Noch offen', winnerName(bronze) ?? (bronze ? 'Noch offen' : 'Nicht ausgespielt')];
+        for (const [index, name] of placements.entries()) {
+          const place = make('li', '', `min-w-0 rounded-xl border p-4 sm:p-5 ${index === 0
+            ? 'border-[#173a2e] bg-[#173a2e] text-white' : 'border-[#d9dbd0] bg-white text-[#173a2e]'}`);
+          place.append(make('p', `${index + 1}. Platz`, 'text-sm font-semibold'),
+            make('p', name, 'mt-2 break-words text-xl font-bold'));
+          list.append(place);
+        }
+        podium.append(heading, list);
+        detail.append(podium);
       }
-      tables.append(card);
-    }
-    if (data.tables.length) {
-      detail.append(make('h3', 'Gruppentabellen und Vorrundenspiele', 'text-xl font-bold'), shortcuts, tables);
-    }
-    if (finals.length) {
-      const names = new Map<string, string>();
-      for (const match of finals) {
-        if (match.home && match.home_name) names.set(match.home, match.home_name);
-        if (match.away && match.away_name) names.set(match.away, match.away_name);
+      const formatPercent = new Intl.NumberFormat('de-AT', { style: 'percent', maximumFractionDigits: 2 });
+      const percentage = (won: number, lost: number) => won + lost ? formatPercent.format(won / (won + lost)) : '–';
+      const scoreText = (match: Match) => match.score?.map(set => set.join(':')).join(', ') ?? (match.winner ? 'Freilos' : 'Offen');
+      const matchRow = (match: Match, label = '') => {
+        const item = make('li', '', 'grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-3 px-4 py-2.5 text-sm');
+        item.append(make('span', `${label}${match.home_name ?? 'Noch offen'} – ${match.away_name ?? 'Noch offen'}`, 'min-w-0 break-words'),
+          make('span', scoreText(match), 'text-right font-semibold tabular-nums'));
+        return item;
+      };
+      const tables = make('div', '', 'grid gap-5');
+      const shortcuts = make('div', '', 'flex flex-wrap gap-2');
+      for (const group of data.tables) {
+        const anchor = `gruppe-${group.phase}-${group.position}`;
+        const title = `${group.phase === 1 ? 'Vorrunde' : 'Platzierungsrunde'} · ${group.name}`;
+        const jump = make('a', group.name, 'rounded-full border border-[#d9dbd0] bg-white px-3 py-2 text-sm font-semibold hover:bg-[#e9ece0]');
+        jump.href = `#${anchor}`;
+        shortcuts.append(jump);
+        const card = make('section', '', 'min-w-0 scroll-mt-6 rounded-xl border border-[#d9dbd0] bg-white');
+        card.id = anchor;
+        const heading = make('h3', title, 'px-4 py-4 text-lg font-bold sm:px-6');
+        heading.id = `${anchor}-titel`;
+        card.append(heading);
+        const scroll = make('div', '', 'overflow-x-auto');
+        scroll.tabIndex = 0;
+        scroll.setAttribute('role', 'region');
+        scroll.setAttribute('aria-labelledby', heading.id);
+        const table = make('table', '', 'w-full min-w-[38rem] border-collapse text-sm tabular-nums');
+        table.setAttribute('aria-labelledby', heading.id);
+        const head = make('thead', '', 'border-y border-[#d9dbd0] bg-[#f5f3ec]');
+        const columns = make('tr', '', '');
+        for (const [index, label] of ['Pos.', 'Spieler', 'Matches S/N', 'Sätze S/N', 'Satzquote', 'Games S/N', 'Gamequote'].entries()) {
+          const cell = make('th', label, `whitespace-nowrap px-3 py-3 font-semibold ${index < 2 ? 'text-left' : 'text-center'}`);
+          cell.scope = 'col';
+          columns.append(cell);
+        }
+        head.append(columns);
+        const body = make('tbody', '', '');
+        for (const row of group.rows) {
+          const item = make('tr', '', 'odd:bg-[#f8f8f5]');
+          const name = make('th', row.name, 'min-w-36 px-3 py-3 text-left font-semibold break-words');
+          name.scope = 'row';
+          if (row.tied) name.append(make('span', 'Gleichstand', 'block text-xs font-normal'));
+          item.append(make('td', String(row.rank), 'px-3 py-3'), name);
+          for (const value of [`${row.wins}–${row.losses}`, `${row.setsFor}–${row.setsAgainst}`, percentage(row.setsFor, row.setsAgainst),
+            `${row.gamesFor}–${row.gamesAgainst}`, percentage(row.gamesFor, row.gamesAgainst)]) {
+            item.append(make('td', value, 'whitespace-nowrap px-3 py-3 text-center font-semibold'));
+          }
+          body.append(item);
+        }
+        table.append(head, body);
+        scroll.append(table);
+        card.append(scroll);
+        const matches = data.matches.filter(match => match.phase === group.phase && match.group_position === group.position);
+        if (matches.length) {
+          const schedule = make('details', '', 'border-t border-[#d9dbd0]');
+          const played = matches.filter(match => match.score).length;
+          schedule.append(make('summary', `Gruppenspiele · ${played} von ${matches.length} gespielt`, 'cursor-pointer px-4 py-3 text-sm font-semibold sm:px-6'));
+          const list = make('ul', '', 'divide-y divide-[#e9ece0]');
+          list.append(...matches.map(match => matchRow(match)));
+          schedule.append(list);
+          card.append(schedule);
+        }
+        tables.append(card);
       }
-      detail.append(make('h3', 'K.-o.-Turnierbaum', 'text-xl font-bold'), renderBracket(finals.map(match => ({ ...match,
-        position: match.bracket_position! })), names));
+      if (data.tables.length) {
+        detail.append(make('h3', 'Gruppentabellen und Vorrundenspiele', 'text-xl font-bold'), shortcuts, tables);
+      }
+      if (finals.length) {
+        const names = new Map<string, string>();
+        for (const match of finals) {
+          if (match.home && match.home_name) names.set(match.home, match.home_name);
+          if (match.away && match.away_name) names.set(match.away, match.away_name);
+        }
+        detail.append(make('h3', 'K.-o.-Turnierbaum', 'text-xl font-bold'), renderBracket(finals.map(match => ({ ...match,
+          position: match.bracket_position! })), names));
+      }
+      detail.hidden = false;
     }
-    detail.hidden = false;
+
+    render().catch(() => { status.textContent = 'Die Meisterschaftsdaten sind derzeit nicht verfügbar.'; });
   }
-
-  render().catch(() => { status.textContent = 'Die Meisterschaftsdaten sind derzeit nicht verfügbar.'; });
-
+  document.addEventListener('astro:page-load', initializeChampionships);
 </script>

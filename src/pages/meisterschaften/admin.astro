@@ -1,14 +1,8 @@
 ---
 import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
-import Layout from '../../layouts/Layout.astro';
-import SectionContainer from '../../components/ui/SectionContainer.astro';
-import ChampionshipNavigation from '../../components/ChampionshipNavigation.astro';
+import ChampionshipLayout from '../../layouts/ChampionshipLayout.astro';
 ---
-<Layout title="Meisterschaften verwalten">
-  <SectionContainer aria-labelledby="title">
-    <a href="/meisterschaften/" class="text-sm font-semibold underline underline-offset-4">Einzelmeisterschaften</a>
-    <h1 id="title" class="my-4 text-4xl font-bold text-[#173a2e]">Meisterschaften verwalten</h1>
-    <ChampionshipNavigation />
+<ChampionshipLayout title="Meisterschaften verwalten">
     <p id="admin-status" role="status" class="my-4 text-sm"></p>
     <section id="admin-login" class="my-5 max-w-xl rounded-xl border border-[#d9dbd0] bg-white p-5" aria-labelledby="admin-login-title">
       <h2 id="admin-login-title" class="text-xl font-bold">Vereinslogin</h2>
@@ -116,471 +110,475 @@ import ChampionshipNavigation from '../../components/ChampionshipNavigation.astr
       <ul id="trashed-events" class="mt-4 grid gap-3"></ul>
     </details>
     </div>
-  </SectionContainer>
-</Layout>
+</ChampionshipLayout>
 
 <script>
   import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
   import { resultCard, type AdminMatch } from '../../scripts/meisterschaft-results.ts';
   import { bracketRound, renderBracket, type BracketMatch } from '../../scripts/meisterschaft-bracket.ts';
-  const status = document.querySelector<HTMLElement>('#admin-status')!;
-  const setup = document.querySelector<HTMLElement>('#setup')!;
-  const preview = document.querySelector<HTMLOListElement>('#preview')!;
-  const start = document.querySelector<HTMLFormElement>('#start')!;
-  const existing = document.querySelector<HTMLSelectElement>('#existing')!;
-  const phaseForm = document.querySelector<HTMLFormElement>('#phase')!;
-  const knockoutPreview = document.querySelector<HTMLElement>('#knockout-preview')!;
-  const seedRows = document.querySelector('#seed-rows')!;
-  const manualToggle = document.querySelector<HTMLInputElement>('#manual-toggle')!;
-  const manualGroups = document.querySelector<HTMLElement>('#manual-groups')!;
-  const createForm = document.querySelector<HTMLFormElement>('#create')!;
-  const settings = document.querySelector<HTMLFormElement>('#championship-settings')!;
-  const settingsStatus = document.querySelector('#settings-status')!;
-  const trash = document.querySelector<HTMLDetailsElement>('#championship-trash')!;
-  const trashList = document.querySelector('#trashed-events')!;
-  const deleteButton = document.querySelector<HTMLButtonElement>('#delete-championship')!;
-  const newDraft = document.querySelector<HTMLButtonElement>('#new-draft')!;
-  const resultPanel = document.querySelector<HTMLElement>('#result-panel')!;
-  const results = document.querySelector<HTMLElement>('#result-list')!;
-  type Summary = { id: string; title: string; version: number; status: string };
-  type Settings = Summary & { description: string; starts_on: string; ends_on: string | null; phase_two: string;
-    visibility: string; published: number; allow_submissions: number };
-  type Entry = { id: string; display_name: string; seed: number | null };
-  type Contact = { id: string; display_name: string; active: number };
-  let entries: Entry[] = [];
-  let contacts: Contact[] = [];
-  let draft: { id: string; version: number } | null = null;
-  let knockoutSlots: (string | null)[] | undefined;
-  let suggested: { groupCount: number; seed: number; groups?: string[][]; reason?: string } | null = null;
+  import { championshipRole } from '../../scripts/meisterschaft-session.ts';
+  function initializeAdmin() {
+    const root = document.querySelector<HTMLElement>('[data-championship-page]');
+    if (!root?.querySelector('#admin-workspace')) return;
+    const page = root;
+    const status = page.querySelector<HTMLElement>('#admin-status')!;
+    const setup = page.querySelector<HTMLElement>('#setup')!;
+    const preview = page.querySelector<HTMLOListElement>('#preview')!;
+    const start = page.querySelector<HTMLFormElement>('#start')!;
+    const existing = page.querySelector<HTMLSelectElement>('#existing')!;
+    const phaseForm = page.querySelector<HTMLFormElement>('#phase')!;
+    const knockoutPreview = page.querySelector<HTMLElement>('#knockout-preview')!;
+    const seedRows = page.querySelector('#seed-rows')!;
+    const manualToggle = page.querySelector<HTMLInputElement>('#manual-toggle')!;
+    const manualGroups = page.querySelector<HTMLElement>('#manual-groups')!;
+    const createForm = page.querySelector<HTMLFormElement>('#create')!;
+    const settings = page.querySelector<HTMLFormElement>('#championship-settings')!;
+    const settingsStatus = page.querySelector('#settings-status')!;
+    const trash = page.querySelector<HTMLDetailsElement>('#championship-trash')!;
+    const trashList = page.querySelector('#trashed-events')!;
+    const deleteButton = page.querySelector<HTMLButtonElement>('#delete-championship')!;
+    const newDraft = page.querySelector<HTMLButtonElement>('#new-draft')!;
+    const resultPanel = page.querySelector<HTMLElement>('#result-panel')!;
+    const results = page.querySelector<HTMLElement>('#result-list')!;
+    type Summary = { id: string; title: string; version: number; status: string };
+    type Settings = Summary & { description: string; starts_on: string; ends_on: string | null; phase_two: string;
+      visibility: string; published: number; allow_submissions: number };
+    type Entry = { id: string; display_name: string; seed: number | null };
+    type Contact = { id: string; display_name: string; active: number };
+    let entries: Entry[] = [];
+    let contacts: Contact[] = [];
+    let draft: { id: string; version: number } | null = null;
+    let knockoutSlots: (string | null)[] | undefined;
+    let suggested: { groupCount: number; seed: number; groups?: string[][]; reason?: string } | null = null;
 
-  function bind(id: string, run: (data: FormData) => Promise<void>) {
-    const form = document.querySelector<HTMLFormElement>(`#${id}`)!;
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      const button = (event as SubmitEvent).submitter as HTMLButtonElement ?? form.querySelector('button')!;
-      const fields = new FormData(form, button);
-      button.disabled = true;
-      status.textContent = '';
-      try { await run(fields); }
-      catch (error) { status.textContent = error instanceof Error ? error.message : 'Aktion fehlgeschlagen.'; }
-      finally { button.disabled = false; }
-    });
-  }
-
-  async function post(path: string, value: object) {
-    const response = await fetch(`/api/meisterschaften${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
-    const output = await response.json();
-    if (!response.ok) throw new Error(output.error ?? 'Aktion fehlgeschlagen.');
-    return output;
-  }
-
-  async function openCompetition(item: Summary) {
-    draft = { id: item.id, version: item.version };
-    start.hidden = true;
-    suggested = null;
-    preview.replaceChildren();
-    setup.hidden = item.status !== 'draft';
-    createForm.hidden = true;
-    newDraft.hidden = false;
-    phaseForm.hidden = !['groups_active', 'phase_active'].includes(item.status);
-    for (const button of phaseForm.querySelectorAll<HTMLButtonElement>('button[name="action"]')) {
-      button.hidden = item.status === 'phase_active' ? button.value !== 'finish' : button.value === 'finish';
+    function bind(id: string, run: (data: FormData) => Promise<void>) {
+      const form = page.querySelector<HTMLFormElement>(`#${id}`)!;
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = (event as SubmitEvent).submitter as HTMLButtonElement ?? form.querySelector('button')!;
+        const fields = new FormData(form, button);
+        button.disabled = true;
+        status.textContent = '';
+        try { await run(fields); }
+        catch (error) { status.textContent = error instanceof Error ? error.message : 'Aktion fehlgeschlagen.'; }
+        finally { button.disabled = false; }
+      });
     }
-    document.querySelector('#phase-preview')!.textContent = '';
-    knockoutSlots = undefined;
-    knockoutPreview.replaceChildren();
-    resultPanel.hidden = item.status === 'draft';
-    results.replaceChildren();
-    history.replaceState(null, '', `?id=${encodeURIComponent(item.id)}`);
-    document.querySelector('#draft-title')!.textContent = item.title;
-    settings.hidden = true;
-    await loadSettings(item.id);
-    if (item.status === 'draft') {
-      const response = await fetch(`/api/meisterschaften/${encodeURIComponent(item.id)}/teilnehmer`);
-      if (!response.ok) throw new Error('Teilnehmer konnten nicht geladen werden.');
-      entries = await response.json();
-      renderSeeds();
-    } else await loadResults(item.id);
-  }
 
-  async function loadSettings(id: string) {
-    const response = await fetch(`/api/meisterschaften/${encodeURIComponent(id)}`);
-    if (!response.ok) throw new Error('Einstellungen konnten nicht geladen werden.');
-    const { championship }: { championship: Settings } = await response.json();
-    if (draft?.id !== id) return;
-    const field = (key: string) => settings.elements.namedItem(key) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
-    for (const [key, value] of Object.entries({ title: championship.title, description: championship.description,
-      startsOn: championship.starts_on, endsOn: championship.ends_on ?? '', phaseTwo: championship.phase_two, visibility: championship.visibility })) {
-      field(key).value = value;
+    async function post(path: string, value: object) {
+      const response = await fetch(`/api/meisterschaften${path}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(value) });
+      const output = await response.json();
+      if (!response.ok) throw new Error(output.error ?? 'Aktion fehlgeschlagen.');
+      return output;
     }
-    const published = field('published') as HTMLInputElement;
-    published.checked = Boolean(championship.published);
-    published.disabled = championship.status === 'draft';
-    (field('allowSubmissions') as HTMLInputElement).checked = Boolean(championship.allow_submissions);
-    (field('phaseTwo') as HTMLSelectElement).disabled = !['draft', 'groups_active'].includes(championship.status);
-    (start.elements.namedItem('allowSubmissions') as HTMLInputElement).checked = Boolean(championship.allow_submissions);
-    settings.hidden = false;
-  }
 
-  async function loadResults(id: string) {
-    const response = await fetch(`/api/meisterschaften/${encodeURIComponent(id)}`);
-    if (!response.ok) throw new Error('Begegnungen konnten nicht geladen werden.');
-    const { matches }: { matches: AdminMatch[] } = await response.json();
-    if (draft?.id !== id) return;
-    const cards = matches.map(match => resultCard(match, () => loadResults(id)));
-    results.replaceChildren(...(cards.length ? cards : [document.createTextNode('Für diese Meisterschaft gibt es noch keine Begegnungen.')]));
-    document.querySelector<HTMLAnchorElement>('#public-detail')!.href = `/meisterschaften/?id=${encodeURIComponent(id)}`;
-  }
-
-  newDraft.onclick = () => {
-    draft = null;
-    setup.hidden = true; phaseForm.hidden = true; resultPanel.hidden = true; settings.hidden = true;
-    newDraft.hidden = true; createForm.hidden = false;
-    existing.value = '';
-    history.replaceState(null, '', location.pathname);
-    createForm.querySelector<HTMLInputElement>('input[name="title"]')?.focus();
-  };
-
-  function renderSeeds() {
-    document.querySelector('#participant-count')!.textContent = `(${entries.length})`;
-    renderAvailableContacts();
-    seedRows.replaceChildren(...entries.map(entry => {
-      const label = document.createElement('label');
-      label.textContent = entry.display_name;
-      const input = document.createElement('input');
-      input.type = 'number'; input.min = '1'; input.max = '32'; input.name = entry.id;
-      input.placeholder = 'Ungesetzt'; input.value = entry.seed?.toString() ?? '';
-      label.append(input);
-      return label;
-    }));
-    manualGroups.replaceChildren(...entries.map(entry => {
-      const label = document.createElement('label');
-      label.textContent = `Gruppe für ${entry.display_name}`;
-      const input = document.createElement('input');
-      input.type = 'number'; input.inputMode = 'numeric'; input.min = '1'; input.max = '16'; input.name = `group-${entry.id}`;
-      label.append(input);
-      return label;
-    }));
-  }
-  function renderAvailableContacts() {
-    const available = contacts.filter(contact => contact.active && !entries.some(entry => entry.id === contact.id));
-    const select = document.querySelector<HTMLSelectElement>('#available-players')!;
-    select.replaceChildren(new Option(available.length ? 'Bitte auswählen' : 'Keine weiteren aktiven Kontakte', ''),
-      ...available.map(contact => new Option(contact.display_name, contact.id)));
-    document.querySelector<HTMLButtonElement>('#reuse-player button')!.disabled = available.length === 0;
-  }
-  manualToggle.onchange = () => {
-    manualGroups.hidden = !manualToggle.checked;
-    document.querySelector<HTMLElement>('#manual-reason')!.hidden = !manualToggle.checked;
-    suggested = null;
-    start.hidden = true;
-    preview.replaceChildren();
-  };
-
-  async function listCompetitions() {
-    const response = await fetch('/api/meisterschaften');
-    if (!response.ok) return;
-    const items: Summary[] = await response.json();
-    const editable = items.filter(item => typeof item.version === 'number');
-    const labels: Record<string, string> = { draft: 'Entwurf', groups_active: 'Vorrunde', phase_active: 'Folgephase', finished: 'Abgeschlossen', archived: 'Archiviert' };
-    existing.replaceChildren(new Option('Bitte auswählen', ''), ...editable.map(item =>
-      new Option(labels[item.status] ? `${item.title} · ${labels[item.status]}` : item.title, item.id)));
-    document.querySelector<HTMLElement>('#existing-label')!.hidden = editable.length === 0;
-    existing.onchange = () => {
-      const item = editable.find(row => row.id === existing.value);
-      if (item) openCompetition(item).catch(error => { status.textContent = error.message; });
-    };
-    const current = draft?.id ?? new URLSearchParams(location.search).get('id');
-    existing.value = current ?? '';
-    if (!draft && current) {
-      const item = editable.find(row => row.id === current);
-      if (item) await openCompetition(item);
-    }
-  }
-
-  bind('create', async fields => {
-    const saved = await post('', Object.fromEntries(fields));
-    await openCompetition({ ...saved, title: String(fields.get('title')), status: 'draft' });
-    createForm.reset();
-    status.textContent = 'Entwurf gespeichert. Füge jetzt die Teilnehmer hinzu.';
-    document.querySelector<HTMLInputElement>('#player input[name="firstName"]')?.focus();
-    await listCompetitions();
-  });
-  async function addParticipant(fields: FormData) {
-    if (!draft) return;
-    draft = await post(`/${draft.id}/teilnehmer`, { ...Object.fromEntries(fields), version: draft.version });
-    const response = await fetch(`/api/meisterschaften/${encodeURIComponent(draft!.id)}/teilnehmer`);
-    if (response.ok) { entries = await response.json(); renderSeeds(); }
-    document.querySelector<HTMLFormElement>('#player')!.reset();
-    start.hidden = true;
-    preview.replaceChildren();
-    status.textContent = 'Teilnehmer hinzugefügt.';
-  }
-  bind('reuse-player', addParticipant);
-  bind('championship-settings', async fields => {
-    if (!draft) return;
-    const id = draft.id;
-    settingsStatus.textContent = '';
-    try {
-      const saved = await post(`/${id}/einstellungen`, { ...Object.fromEntries(fields), version: draft.version,
-        phaseTwo: (settings.elements.namedItem('phaseTwo') as HTMLSelectElement).value,
-        published: fields.has('published'), allowSubmissions: fields.has('allowSubmissions') });
-      if (draft?.id !== id) return;
-      draft.version = saved.version;
+    async function openCompetition(item: Summary) {
+      draft = { id: item.id, version: item.version };
+      start.hidden = true;
+      suggested = null;
+      preview.replaceChildren();
+      setup.hidden = item.status !== 'draft';
+      createForm.hidden = true;
+      newDraft.hidden = false;
+      phaseForm.hidden = !['groups_active', 'phase_active'].includes(item.status);
+      for (const button of phaseForm.querySelectorAll<HTMLButtonElement>('button[name="action"]')) {
+        button.hidden = item.status === 'phase_active' ? button.value !== 'finish' : button.value === 'finish';
+      }
+      page.querySelector('#phase-preview')!.textContent = '';
       knockoutSlots = undefined;
       knockoutPreview.replaceChildren();
-      document.querySelector('#phase-preview')!.textContent = '';
-      document.querySelector('#draft-title')!.textContent = String(fields.get('title'));
-      await loadSettings(id);
-      await listCompetitions();
-      settingsStatus.textContent = 'Einstellungen gespeichert.';
-    } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Speichern fehlgeschlagen.'; }
-  });
-  async function loadTrash() {
-    const response = await fetch('/api/meisterschaften/papierkorb');
-    if (!response.ok) throw new Error('Der Papierkorb konnte nicht geladen werden.');
-    const deleted: Summary[] = await response.json();
-    trashList.replaceChildren(...deleted.map(item => {
-      const row = document.createElement('li');
-      row.className = 'flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#f5f3ec] p-3';
-      const name = document.createElement('span');
-      name.className = 'break-words font-semibold';
-      name.textContent = item.title;
-      const restore = document.createElement('button');
-      restore.type = 'button';
-      restore.className = championshipButton.secondary;
-      restore.textContent = 'Wiederherstellen';
-      restore.onclick = async () => {
-        restore.disabled = true;
-        try {
-          await post(`/${item.id}/wiederherstellen`, { version: item.version, confirm: true });
-          await Promise.all([listCompetitions(), loadTrash()]);
-          status.textContent = 'Meisterschaft wiederhergestellt. Die bisherige Sichtbarkeit gilt wieder.';
-          status.scrollIntoView({ block: 'nearest' });
-        } catch (error) { status.textContent = error instanceof Error ? error.message : 'Wiederherstellen fehlgeschlagen.'; }
-        finally { restore.disabled = false; }
-      };
-      row.append(name, restore);
-      return row;
-    }));
-    if (!deleted.length) {
-      const row = document.createElement('li');
-      row.textContent = 'Der Papierkorb ist leer.';
-      trashList.append(row);
+      resultPanel.hidden = item.status === 'draft';
+      results.replaceChildren();
+      history.replaceState(null, '', `?id=${encodeURIComponent(item.id)}`);
+      page.querySelector('#draft-title')!.textContent = item.title;
+      settings.hidden = true;
+      await loadSettings(item.id);
+      if (item.status === 'draft') {
+        const response = await fetch(`/api/meisterschaften/${encodeURIComponent(item.id)}/teilnehmer`);
+        if (!response.ok) throw new Error('Teilnehmer konnten nicht geladen werden.');
+        entries = await response.json();
+        renderSeeds();
+      } else await loadResults(item.id);
     }
-  }
-  trash.addEventListener('toggle', () => {
-    if (trash.open) loadTrash().catch(error => { trashList.textContent = error.message; });
-  });
-  deleteButton.onclick = async () => {
-    if (!draft || !confirm('Diese Meisterschaft in den Papierkorb verschieben? Sie verschwindet aus der Übersicht und kann wiederhergestellt werden.')) return;
-    const { id, version } = draft;
-    deleteButton.disabled = true;
-    try {
-      await post(`/${id}/loeschen`, { version, confirm: true });
-      newDraft.click();
-      await listCompetitions();
-      if (trash.open) await loadTrash();
-      status.textContent = 'Meisterschaft in den Papierkorb verschoben.';
-    } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Löschen fehlgeschlagen.'; }
-    finally { deleteButton.disabled = false; }
-  };
-  bind('player', async fields => { await addParticipant(fields); await loadAccounts(); });
-  bind('seeds', async fields => {
-    if (!draft) return;
-    const selected = [...fields].filter(([, value]) => value !== '');
-    if (new Set(selected.map(([, value]) => value)).size !== selected.length) throw new Error('Jeder Setzplatz darf nur einmal vergeben werden.');
-    const order = selected.sort((a, b) => Number(a[1]) - Number(b[1])).map(([id]) => id);
-    draft = await post(`/${draft.id}/setzliste`, { order, version: draft.version });
-    start.hidden = true;
-    preview.replaceChildren();
-    status.textContent = 'Setzliste gespeichert.';
-  });
-  bind('draw', async fields => {
-    if (!draft) return;
-    const groupCount = Number(fields.get('groupCount'));
-    let groups: string[][] | undefined;
-    if (manualToggle.checked) {
-      groups = Array.from({ length: groupCount }, () => []);
-      for (const entry of entries) {
-        const group = Number(fields.get(`group-${entry.id}`));
-        if (!Number.isInteger(group) || group < 1 || group > groupCount) throw new Error(`Gruppe für ${entry.display_name} auswählen.`);
-        groups[group - 1].push(entry.id);
+
+    async function loadSettings(id: string) {
+      const response = await fetch(`/api/meisterschaften/${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error('Einstellungen konnten nicht geladen werden.');
+      const { championship }: { championship: Settings } = await response.json();
+      if (draft?.id !== id) return;
+      const field = (key: string) => settings.elements.namedItem(key) as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+      for (const [key, value] of Object.entries({ title: championship.title, description: championship.description,
+        startsOn: championship.starts_on, endsOn: championship.ends_on ?? '', phaseTwo: championship.phase_two, visibility: championship.visibility })) {
+        field(key).value = value;
+      }
+      const published = field('published') as HTMLInputElement;
+      published.checked = Boolean(championship.published);
+      published.disabled = championship.status === 'draft';
+      (field('allowSubmissions') as HTMLInputElement).checked = Boolean(championship.allow_submissions);
+      (field('phaseTwo') as HTMLSelectElement).disabled = !['draft', 'groups_active'].includes(championship.status);
+      (start.elements.namedItem('allowSubmissions') as HTMLInputElement).checked = Boolean(championship.allow_submissions);
+      settings.hidden = false;
+    }
+
+    async function loadResults(id: string) {
+      const response = await fetch(`/api/meisterschaften/${encodeURIComponent(id)}`);
+      if (!response.ok) throw new Error('Begegnungen konnten nicht geladen werden.');
+      const { matches }: { matches: AdminMatch[] } = await response.json();
+      if (draft?.id !== id) return;
+      const cards = matches.map(match => resultCard(match, () => loadResults(id)));
+      results.replaceChildren(...(cards.length ? cards : [document.createTextNode('Für diese Meisterschaft gibt es noch keine Begegnungen.')]));
+      page.querySelector<HTMLAnchorElement>('#public-detail')!.href = `/meisterschaften/?id=${encodeURIComponent(id)}`;
+    }
+
+    newDraft.onclick = () => {
+      draft = null;
+      setup.hidden = true; phaseForm.hidden = true; resultPanel.hidden = true; settings.hidden = true;
+      newDraft.hidden = true; createForm.hidden = false;
+      existing.value = '';
+      history.replaceState(null, '', location.pathname);
+      createForm.querySelector<HTMLInputElement>('input[name="title"]')?.focus();
+    };
+
+    function renderSeeds() {
+      page.querySelector('#participant-count')!.textContent = `(${entries.length})`;
+      renderAvailableContacts();
+      seedRows.replaceChildren(...entries.map(entry => {
+        const label = document.createElement('label');
+        label.textContent = entry.display_name;
+        const input = document.createElement('input');
+        input.type = 'number'; input.min = '1'; input.max = '32'; input.name = entry.id;
+        input.placeholder = 'Ungesetzt'; input.value = entry.seed?.toString() ?? '';
+        label.append(input);
+        return label;
+      }));
+      manualGroups.replaceChildren(...entries.map(entry => {
+        const label = document.createElement('label');
+        label.textContent = `Gruppe für ${entry.display_name}`;
+        const input = document.createElement('input');
+        input.type = 'number'; input.inputMode = 'numeric'; input.min = '1'; input.max = '16'; input.name = `group-${entry.id}`;
+        label.append(input);
+        return label;
+      }));
+    }
+    function renderAvailableContacts() {
+      const available = contacts.filter(contact => contact.active && !entries.some(entry => entry.id === contact.id));
+      const select = page.querySelector<HTMLSelectElement>('#available-players')!;
+      select.replaceChildren(new Option(available.length ? 'Bitte auswählen' : 'Keine weiteren aktiven Kontakte', ''),
+        ...available.map(contact => new Option(contact.display_name, contact.id)));
+      page.querySelector<HTMLButtonElement>('#reuse-player button')!.disabled = available.length === 0;
+    }
+    manualToggle.onchange = () => {
+      manualGroups.hidden = !manualToggle.checked;
+      page.querySelector<HTMLElement>('#manual-reason')!.hidden = !manualToggle.checked;
+      suggested = null;
+      start.hidden = true;
+      preview.replaceChildren();
+    };
+
+    async function listCompetitions() {
+      const response = await fetch('/api/meisterschaften');
+      if (!response.ok) return;
+      const items: Summary[] = await response.json();
+      const editable = items.filter(item => typeof item.version === 'number');
+      const labels: Record<string, string> = { draft: 'Entwurf', groups_active: 'Vorrunde', phase_active: 'Folgephase', finished: 'Abgeschlossen', archived: 'Archiviert' };
+      existing.replaceChildren(new Option('Bitte auswählen', ''), ...editable.map(item =>
+        new Option(labels[item.status] ? `${item.title} · ${labels[item.status]}` : item.title, item.id)));
+      page.querySelector<HTMLElement>('#existing-label')!.hidden = editable.length === 0;
+      existing.onchange = () => {
+        const item = editable.find(row => row.id === existing.value);
+        if (item) openCompetition(item).catch(error => { status.textContent = error.message; });
+      };
+      const current = draft?.id ?? new URLSearchParams(location.search).get('id');
+      existing.value = current ?? '';
+      if (!draft && current) {
+        const item = editable.find(row => row.id === current);
+        if (item) await openCompetition(item);
       }
     }
-    const reason = String(fields.get('reason') ?? '');
-    const result: { seed: number; entries: { id: string; display_name: string }[]; groups: string[][] } =
-      await post(`/${draft.id}/auslosung/vorschau`, { groupCount, groups, reason, version: draft.version });
-    suggested = { groupCount, seed: result.seed, groups, reason };
-    const names = new Map(result.entries.map(entry => [entry.id, entry.display_name]));
-    preview.replaceChildren(...result.groups.map((group, index) => {
-      const item = document.createElement('li');
-      item.textContent = `Gruppe ${String.fromCharCode(65 + index)} · ${group.map(id => names.get(id)).join(', ')}`;
-      return item;
-    }));
-    start.hidden = false;
-  });
-  bind('start', async fields => {
-    if (!draft || !suggested || !confirm('Diese Gruppenauslosung übernehmen und die Vorrunde starten?')) return;
-    const id = draft.id;
-    const saved = await post(`/${id}/auslosung/starten`, { ...suggested, version: draft.version, confirm: true,
-      publish: fields.has('publish'), allowSubmissions: fields.has('allowSubmissions') });
-    await openCompetition({ ...saved, id, title: document.querySelector('#draft-title')!.textContent ?? '', status: 'groups_active' });
-    status.textContent = 'Vorrunde gestartet. Die Ergebnisse können jetzt eingetragen werden.';
-    document.querySelector<HTMLElement>('#results-title')?.focus();
-    await listCompetitions();
-  });
-  type PhasePreview = { bracket: BracketMatch[]; positions: string[][]; rankings: { id: string; name?: string }[][] };
-  function showKnockout(bracket: BracketMatch[], names: Map<string, string>, config: { qualifiers: number; bronze: boolean }) {
-    const opening = bracket.filter(match => match.round === 1);
-    const slots = opening.flatMap(match => [match.home, match.away]);
-    const choices = [...new Set(slots)];
-    const editor = document.createElement('div');
-    editor.className = 'grid gap-3';
-    const intro = document.createElement('p');
-    intro.className = 'text-sm';
-    intro.textContent = 'Wähle einen anderen Eintrag, um zwei Plätze zu tauschen. Beim Start wird die angezeigte Aufstellung übernommen.';
-    const reset = document.createElement('button');
-    reset.type = 'button';
-    reset.className = `${championshipButton.secondary} justify-self-start`;
-    reset.textContent = 'Automatische Aufstellung wiederherstellen';
-    editor.append(intro, reset);
-    const note = document.createElement('p');
-    note.setAttribute('role', 'status');
-    note.className = 'text-sm text-red-800';
-    const selects: HTMLSelectElement[] = [];
-    async function update(next?: (string | null)[], focus?: number) {
+
+    bind('create', async fields => {
+      const saved = await post('', Object.fromEntries(fields));
+      await openCompetition({ ...saved, title: String(fields.get('title')), status: 'draft' });
+      createForm.reset();
+      status.textContent = 'Entwurf gespeichert. Füge jetzt die Teilnehmer hinzu.';
+      page.querySelector<HTMLInputElement>('#player input[name="firstName"]')?.focus();
+      await listCompetitions();
+    });
+    async function addParticipant(fields: FormData) {
+      if (!draft) return;
+      draft = await post(`/${draft.id}/teilnehmer`, { ...Object.fromEntries(fields), version: draft.version });
+      const response = await fetch(`/api/meisterschaften/${encodeURIComponent(draft!.id)}/teilnehmer`);
+      if (response.ok) { entries = await response.json(); renderSeeds(); }
+      page.querySelector<HTMLFormElement>('#player')!.reset();
+      start.hidden = true;
+      preview.replaceChildren();
+      status.textContent = 'Teilnehmer hinzugefügt.';
+    }
+    bind('reuse-player', addParticipant);
+    bind('championship-settings', async fields => {
       if (!draft) return;
       const id = draft.id;
-      const startButton = phaseForm.querySelector<HTMLButtonElement>('button[value="start"]')!;
-      const configFields = [...phaseForm.querySelectorAll<HTMLInputElement>('input[name="qualifiers"], input[name="bronze"]')];
-      const previewButton = phaseForm.querySelector<HTMLButtonElement>('button[value="preview"]')!;
-      startButton.disabled = true;
-      previewButton.disabled = true;
-      configFields.forEach(input => { input.disabled = true; });
-      reset.disabled = true;
-      selects.forEach(select => { select.disabled = true; });
-      note.textContent = '';
+      settingsStatus.textContent = '';
       try {
-        const result: PhasePreview = await post(`/${id}/folgephase/vorschau`, { version: draft.version, ...config, knockoutSlots: next });
+        const saved = await post(`/${id}/einstellungen`, { ...Object.fromEntries(fields), version: draft.version,
+          phaseTwo: (settings.elements.namedItem('phaseTwo') as HTMLSelectElement).value,
+          published: fields.has('published'), allowSubmissions: fields.has('allowSubmissions') });
         if (draft?.id !== id) return;
-        knockoutSlots = next;
-        showKnockout(result.bracket, names, config);
-        if (focus !== undefined) knockoutPreview.querySelectorAll('select')[focus]?.focus();
-      } catch (error) {
-        for (const [index, select] of selects.entries()) select.value = slots[index] ?? '';
-        note.textContent = error instanceof Error ? error.message : 'Die Aufstellung konnte nicht geändert werden.';
-      } finally {
-        startButton.disabled = false;
-        previewButton.disabled = false;
-        configFields.forEach(input => { input.disabled = false; });
-        reset.disabled = false;
-        selects.forEach(select => { select.disabled = false; });
-      }
-    }
-    reset.onclick = () => void update();
-    opening.forEach((match, index) => {
-      const row = document.createElement('fieldset');
-      row.className = 'grid grid-cols-2 gap-2 rounded-lg border border-[#d9dbd0] p-3';
-      const title = document.createElement('legend');
-      title.className = 'px-1 text-sm font-semibold';
-      title.textContent = `${bracketRound(Math.max(...bracket.map(item => item.round)) - 1)} ${match.position}`;
-      row.append(title);
-      for (let side = 0; side < 2; side++) {
-        const offset = index * 2 + side;
-        const select = document.createElement('select');
-        select.className = 'min-w-0 rounded-lg border border-[#9fa995] bg-white px-2 py-2 text-sm';
-        select.setAttribute('aria-label', `${title.textContent}, Platz ${side + 1}`);
-        select.replaceChildren(...choices.map(player => new Option(player ? names.get(player) ?? player : 'Freilos', player ?? '')));
-        select.value = slots[offset] ?? '';
-        select.onchange = () => {
-          const next = [...slots];
-          const selected = select.value || null;
-          if (selected === next[offset]) return;
-          const other = next.indexOf(selected);
-          [next[offset], next[other]] = [next[other], next[offset]];
-          void update(next, offset);
-        };
-        selects.push(select);
-        row.append(select);
-      }
-      editor.append(row);
+        draft.version = saved.version;
+        knockoutSlots = undefined;
+        knockoutPreview.replaceChildren();
+        page.querySelector('#phase-preview')!.textContent = '';
+        page.querySelector('#draft-title')!.textContent = String(fields.get('title'));
+        await loadSettings(id);
+        await listCompetitions();
+        settingsStatus.textContent = 'Einstellungen gespeichert.';
+      } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Speichern fehlgeschlagen.'; }
     });
-    knockoutPreview.replaceChildren(renderBracket(bracket, names), editor, note);
-  }
-  phaseForm.addEventListener('change', event => {
-    if (event.target instanceof HTMLInputElement && ['qualifiers', 'bronze'].includes(event.target.name)) {
-      knockoutSlots = undefined;
-      knockoutPreview.replaceChildren();
-      document.querySelector('#phase-preview')!.textContent = '';
+    async function loadTrash() {
+      const response = await fetch('/api/meisterschaften/papierkorb');
+      if (!response.ok) throw new Error('Der Papierkorb konnte nicht geladen werden.');
+      const deleted: Summary[] = await response.json();
+      trashList.replaceChildren(...deleted.map(item => {
+        const row = document.createElement('li');
+        row.className = 'flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[#f5f3ec] p-3';
+        const name = document.createElement('span');
+        name.className = 'break-words font-semibold';
+        name.textContent = item.title;
+        const restore = document.createElement('button');
+        restore.type = 'button';
+        restore.className = championshipButton.secondary;
+        restore.textContent = 'Wiederherstellen';
+        restore.onclick = async () => {
+          restore.disabled = true;
+          try {
+            await post(`/${item.id}/wiederherstellen`, { version: item.version, confirm: true });
+            await Promise.all([listCompetitions(), loadTrash()]);
+            status.textContent = 'Meisterschaft wiederhergestellt. Die bisherige Sichtbarkeit gilt wieder.';
+            status.scrollIntoView({ block: 'nearest' });
+          } catch (error) { status.textContent = error instanceof Error ? error.message : 'Wiederherstellen fehlgeschlagen.'; }
+          finally { restore.disabled = false; }
+        };
+        row.append(name, restore);
+        return row;
+      }));
+      if (!deleted.length) {
+        const row = document.createElement('li');
+        row.textContent = 'Der Papierkorb ist leer.';
+        trashList.append(row);
+      }
     }
-  });
-  bind('phase', async fields => {
-    if (!draft) return;
-    const action = fields.get('action');
-    const endpoint = action === 'preview' ? 'folgephase/vorschau' : action === 'start' ? 'folgephase/starten' : 'abschliessen';
-    if (action !== 'preview' && !confirm('Diese Turnierphase verbindlich ändern?')) return;
-    const config = { qualifiers: Number(fields.get('qualifiers')), bronze: fields.has('bronze') };
-    const response = await post(`/${draft.id}/${endpoint}`, { version: draft.version, ...config,
-      knockoutSlots, confirm: action !== 'preview' });
-    if (action === 'preview') {
-      const groups = response.rankings.flat() as { id: string; name?: string }[];
-      const names = new Map(groups.map(row => [row.id, row.name ?? row.id]));
-      const rows = (response.positions as string[][]).map((players, index) => `Gruppe ${index + 1} · ${players.map(player => names.get(player)).join(', ')}`);
-      document.querySelector('#phase-preview')!.textContent = rows.length ? rows.join('\n') : `${response.bracket.length} Begegnungen im K.-o.-Spielplan.`;
-      if (response.bracket.length) showKnockout(response.bracket, names, config);
-    } else {
-      await openCompetition({ ...response, id: draft.id, title: document.querySelector('#draft-title')!.textContent ?? '',
-        status: action === 'start' ? 'phase_active' : 'finished' });
-      status.textContent = action === 'start' ? 'Folgephase gestartet.' : 'Meisterschaft abgeschlossen.';
-      document.querySelector<HTMLElement>('#results-title')?.focus();
+    trash.addEventListener('toggle', () => {
+      if (trash.open) loadTrash().catch(error => { trashList.textContent = error.message; });
+    });
+    deleteButton.onclick = async () => {
+      if (!draft || !confirm('Diese Meisterschaft in den Papierkorb verschieben? Sie verschwindet aus der Übersicht und kann wiederhergestellt werden.')) return;
+      const { id, version } = draft;
+      deleteButton.disabled = true;
+      try {
+        await post(`/${id}/loeschen`, { version, confirm: true });
+        newDraft.click();
+        await listCompetitions();
+        if (trash.open) await loadTrash();
+        status.textContent = 'Meisterschaft in den Papierkorb verschoben.';
+      } catch (error) { settingsStatus.textContent = error instanceof Error ? error.message : 'Löschen fehlgeschlagen.'; }
+      finally { deleteButton.disabled = false; }
+    };
+    bind('player', async fields => { await addParticipant(fields); await loadAccounts(); });
+    bind('seeds', async fields => {
+      if (!draft) return;
+      const selected = [...fields].filter(([, value]) => value !== '');
+      if (new Set(selected.map(([, value]) => value)).size !== selected.length) throw new Error('Jeder Setzplatz darf nur einmal vergeben werden.');
+      const order = selected.sort((a, b) => Number(a[1]) - Number(b[1])).map(([id]) => id);
+      draft = await post(`/${draft.id}/setzliste`, { order, version: draft.version });
+      start.hidden = true;
+      preview.replaceChildren();
+      status.textContent = 'Setzliste gespeichert.';
+    });
+    bind('draw', async fields => {
+      if (!draft) return;
+      const groupCount = Number(fields.get('groupCount'));
+      let groups: string[][] | undefined;
+      if (manualToggle.checked) {
+        groups = Array.from({ length: groupCount }, () => []);
+        for (const entry of entries) {
+          const group = Number(fields.get(`group-${entry.id}`));
+          if (!Number.isInteger(group) || group < 1 || group > groupCount) throw new Error(`Gruppe für ${entry.display_name} auswählen.`);
+          groups[group - 1].push(entry.id);
+        }
+      }
+      const reason = String(fields.get('reason') ?? '');
+      const result: { seed: number; entries: { id: string; display_name: string }[]; groups: string[][] } =
+        await post(`/${draft.id}/auslosung/vorschau`, { groupCount, groups, reason, version: draft.version });
+      suggested = { groupCount, seed: result.seed, groups, reason };
+      const names = new Map(result.entries.map(entry => [entry.id, entry.display_name]));
+      preview.replaceChildren(...result.groups.map((group, index) => {
+        const item = document.createElement('li');
+        item.textContent = `Gruppe ${String.fromCharCode(65 + index)} · ${group.map(id => names.get(id)).join(', ')}`;
+        return item;
+      }));
+      start.hidden = false;
+    });
+    bind('start', async fields => {
+      if (!draft || !suggested || !confirm('Diese Gruppenauslosung übernehmen und die Vorrunde starten?')) return;
+      const id = draft.id;
+      const saved = await post(`/${id}/auslosung/starten`, { ...suggested, version: draft.version, confirm: true,
+        publish: fields.has('publish'), allowSubmissions: fields.has('allowSubmissions') });
+      await openCompetition({ ...saved, id, title: page.querySelector('#draft-title')!.textContent ?? '', status: 'groups_active' });
+      status.textContent = 'Vorrunde gestartet. Die Ergebnisse können jetzt eingetragen werden.';
+      page.querySelector<HTMLElement>('#results-title')?.focus();
       await listCompetitions();
+    });
+    type PhasePreview = { bracket: BracketMatch[]; positions: string[][]; rankings: { id: string; name?: string }[][] };
+    function showKnockout(bracket: BracketMatch[], names: Map<string, string>, config: { qualifiers: number; bronze: boolean }) {
+      const opening = bracket.filter(match => match.round === 1);
+      const slots = opening.flatMap(match => [match.home, match.away]);
+      const choices = [...new Set(slots)];
+      const editor = document.createElement('div');
+      editor.className = 'grid gap-3';
+      const intro = document.createElement('p');
+      intro.className = 'text-sm';
+      intro.textContent = 'Wähle einen anderen Eintrag, um zwei Plätze zu tauschen. Beim Start wird die angezeigte Aufstellung übernommen.';
+      const reset = document.createElement('button');
+      reset.type = 'button';
+      reset.className = `${championshipButton.secondary} justify-self-start`;
+      reset.textContent = 'Automatische Aufstellung wiederherstellen';
+      editor.append(intro, reset);
+      const note = document.createElement('p');
+      note.setAttribute('role', 'status');
+      note.className = 'text-sm text-red-800';
+      const selects: HTMLSelectElement[] = [];
+      async function update(next?: (string | null)[], focus?: number) {
+        if (!draft) return;
+        const id = draft.id;
+        const startButton = phaseForm.querySelector<HTMLButtonElement>('button[value="start"]')!;
+        const configFields = [...phaseForm.querySelectorAll<HTMLInputElement>('input[name="qualifiers"], input[name="bronze"]')];
+        const previewButton = phaseForm.querySelector<HTMLButtonElement>('button[value="preview"]')!;
+        startButton.disabled = true;
+        previewButton.disabled = true;
+        configFields.forEach(input => { input.disabled = true; });
+        reset.disabled = true;
+        selects.forEach(select => { select.disabled = true; });
+        note.textContent = '';
+        try {
+          const result: PhasePreview = await post(`/${id}/folgephase/vorschau`, { version: draft.version, ...config, knockoutSlots: next });
+          if (draft?.id !== id) return;
+          knockoutSlots = next;
+          showKnockout(result.bracket, names, config);
+          if (focus !== undefined) knockoutPreview.querySelectorAll('select')[focus]?.focus();
+        } catch (error) {
+          for (const [index, select] of selects.entries()) select.value = slots[index] ?? '';
+          note.textContent = error instanceof Error ? error.message : 'Die Aufstellung konnte nicht geändert werden.';
+        } finally {
+          startButton.disabled = false;
+          previewButton.disabled = false;
+          configFields.forEach(input => { input.disabled = false; });
+          reset.disabled = false;
+          selects.forEach(select => { select.disabled = false; });
+        }
+      }
+      reset.onclick = () => void update();
+      opening.forEach((match, index) => {
+        const row = document.createElement('fieldset');
+        row.className = 'grid grid-cols-2 gap-2 rounded-lg border border-[#d9dbd0] p-3';
+        const title = document.createElement('legend');
+        title.className = 'px-1 text-sm font-semibold';
+        title.textContent = `${bracketRound(Math.max(...bracket.map(item => item.round)) - 1)} ${match.position}`;
+        row.append(title);
+        for (let side = 0; side < 2; side++) {
+          const offset = index * 2 + side;
+          const select = document.createElement('select');
+          select.className = 'min-w-0 rounded-lg border border-[#9fa995] bg-white px-2 py-2 text-sm';
+          select.setAttribute('aria-label', `${title.textContent}, Platz ${side + 1}`);
+          select.replaceChildren(...choices.map(player => new Option(player ? names.get(player) ?? player : 'Freilos', player ?? '')));
+          select.value = slots[offset] ?? '';
+          select.onchange = () => {
+            const next = [...slots];
+            const selected = select.value || null;
+            if (selected === next[offset]) return;
+            const other = next.indexOf(selected);
+            [next[offset], next[other]] = [next[other], next[offset]];
+            void update(next, offset);
+          };
+          selects.push(select);
+          row.append(select);
+        }
+        editor.append(row);
+      });
+      knockoutPreview.replaceChildren(renderBracket(bracket, names), editor, note);
     }
-  });
-  bind('invite', async fields => {
-    const response = await fetch('/api/meisterschaft-login/einladen', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: fields.get('email') }) });
-    const output = await response.json();
-    if (!response.ok) throw new Error(output.error ?? 'Einladung fehlgeschlagen.');
-    status.textContent = 'Einladung verarbeitet.';
-    await loadAccounts();
-  });
-  async function loadAccounts() {
-    const response = await fetch('/api/meisterschaft-konten');
-    if (!response.ok) return;
-    const { accounts, players }: { accounts: { email: string; verified: number | null; active: number }[];
-      players: Contact[] } = await response.json();
-    contacts = players;
-    renderAvailableContacts();
-    document.querySelector('#accounts')!.replaceChildren(new Option('Bitte auswählen', ''), ...accounts.map(account =>
-      new Option(`${account.email}${!account.verified ? ' · unbestätigt' : !account.active ? ' · gesperrt' : ''}`, account.email)));
-    document.querySelector('#players')!.replaceChildren(new Option('Bitte auswählen', ''), ...players.filter(player => player.active).map(player =>
-      new Option(player.display_name, player.id)));
-    document.querySelector<HTMLElement>('#access')!.hidden = !accounts.length;
+    phaseForm.addEventListener('change', event => {
+      if (event.target instanceof HTMLInputElement && ['qualifiers', 'bronze'].includes(event.target.name)) {
+        knockoutSlots = undefined;
+        knockoutPreview.replaceChildren();
+        page.querySelector('#phase-preview')!.textContent = '';
+      }
+    });
+    bind('phase', async fields => {
+      if (!draft) return;
+      const action = fields.get('action');
+      const endpoint = action === 'preview' ? 'folgephase/vorschau' : action === 'start' ? 'folgephase/starten' : 'abschliessen';
+      if (action !== 'preview' && !confirm('Diese Turnierphase verbindlich ändern?')) return;
+      const config = { qualifiers: Number(fields.get('qualifiers')), bronze: fields.has('bronze') };
+      const response = await post(`/${draft.id}/${endpoint}`, { version: draft.version, ...config,
+        knockoutSlots, confirm: action !== 'preview' });
+      if (action === 'preview') {
+        const groups = response.rankings.flat() as { id: string; name?: string }[];
+        const names = new Map(groups.map(row => [row.id, row.name ?? row.id]));
+        const rows = (response.positions as string[][]).map((players, index) => `Gruppe ${index + 1} · ${players.map(player => names.get(player)).join(', ')}`);
+        page.querySelector('#phase-preview')!.textContent = rows.length ? rows.join('\n') : `${response.bracket.length} Begegnungen im K.-o.-Spielplan.`;
+        if (response.bracket.length) showKnockout(response.bracket, names, config);
+      } else {
+        await openCompetition({ ...response, id: draft.id, title: page.querySelector('#draft-title')!.textContent ?? '',
+          status: action === 'start' ? 'phase_active' : 'finished' });
+        status.textContent = action === 'start' ? 'Folgephase gestartet.' : 'Meisterschaft abgeschlossen.';
+        page.querySelector<HTMLElement>('#results-title')?.focus();
+        await listCompetitions();
+      }
+    });
+    bind('invite', async fields => {
+      const response = await fetch('/api/meisterschaft-login/einladen', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: fields.get('email') }) });
+      const output = await response.json();
+      if (!response.ok) throw new Error(output.error ?? 'Einladung fehlgeschlagen.');
+      status.textContent = 'Einladung verarbeitet.';
+      await loadAccounts();
+    });
+    async function loadAccounts() {
+      const response = await fetch('/api/meisterschaft-konten');
+      if (!response.ok) return;
+      const { accounts, players }: { accounts: { email: string; verified: number | null; active: number }[];
+        players: Contact[] } = await response.json();
+      contacts = players;
+      renderAvailableContacts();
+      page.querySelector('#accounts')!.replaceChildren(new Option('Bitte auswählen', ''), ...accounts.map(account =>
+        new Option(`${account.email}${!account.verified ? ' · unbestätigt' : !account.active ? ' · gesperrt' : ''}`, account.email)));
+      page.querySelector('#players')!.replaceChildren(new Option('Bitte auswählen', ''), ...players.filter(player => player.active).map(player =>
+        new Option(player.display_name, player.id)));
+      page.querySelector<HTMLElement>('#access')!.hidden = !accounts.length;
+    }
+    bind('access', async fields => {
+      const action = fields.get('action');
+      const email = fields.get('email');
+      const payload = action === 'link' ? { action, email, playerId: fields.get('playerId'), canSubmit: fields.has('canSubmit') } :
+        { action: 'account', email, active: action === 'enable' };
+      if (action === 'disable' && !confirm('Konto sperren und aktive Anmeldungen widerrufen?')) return;
+      const response = await fetch('/api/meisterschaft-konten', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload) });
+      const output = await response.json();
+      if (!response.ok) throw new Error(output.error ?? 'Speichern fehlgeschlagen.');
+      status.textContent = 'Konto aktualisiert.';
+      await loadAccounts();
+    });
+    const returnId = new URLSearchParams(location.search).get('id');
+    if (returnId) page.querySelector<HTMLAnchorElement>('#admin-login-link')!.href = `/meisterschaften/anmelden/?meisterschaft=${encodeURIComponent(returnId)}`;
+    async function openAdminWorkspace() {
+      const role = await championshipRole();
+      if (role !== 'admin') return;
+      page.querySelector<HTMLElement>('#admin-login')!.hidden = true;
+      page.querySelector<HTMLElement>('#admin-workspace')!.hidden = false;
+      await Promise.all([listCompetitions(), loadAccounts()]);
+    }
+    openAdminWorkspace().catch(error => { status.textContent = error.message; });
   }
-  bind('access', async fields => {
-    const action = fields.get('action');
-    const email = fields.get('email');
-    const payload = action === 'link' ? { action, email, playerId: fields.get('playerId'), canSubmit: fields.has('canSubmit') } :
-      { action: 'account', email, active: action === 'enable' };
-    if (action === 'disable' && !confirm('Konto sperren und aktive Anmeldungen widerrufen?')) return;
-    const response = await fetch('/api/meisterschaft-konten', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload) });
-    const output = await response.json();
-    if (!response.ok) throw new Error(output.error ?? 'Speichern fehlgeschlagen.');
-    status.textContent = 'Konto aktualisiert.';
-    await loadAccounts();
-  });
-  const returnId = new URLSearchParams(location.search).get('id');
-  if (returnId) document.querySelector<HTMLAnchorElement>('#admin-login-link')!.href = `/meisterschaften/anmelden/?meisterschaft=${encodeURIComponent(returnId)}`;
-  async function openAdminWorkspace() {
-    const response = await fetch('/api/meisterschaft-session');
-    if (!response.ok) throw new Error('Die Anmeldung konnte nicht geprüft werden.');
-    const { role } = await response.json();
-    if (role !== 'admin') return;
-    document.querySelector<HTMLElement>('#admin-login')!.hidden = true;
-    document.querySelector<HTMLElement>('#admin-workspace')!.hidden = false;
-    await Promise.all([listCompetitions(), loadAccounts()]);
-  }
-  openAdminWorkspace().catch(error => { status.textContent = error.message; });
+  document.addEventListener('astro:page-load', initializeAdmin);
 </script>

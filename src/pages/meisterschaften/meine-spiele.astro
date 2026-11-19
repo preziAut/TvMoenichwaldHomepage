@@ -1,127 +1,126 @@
 ---
 import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
-import Layout from '../../layouts/Layout.astro';
-import SectionContainer from '../../components/ui/SectionContainer.astro';
-import ChampionshipNavigation from '../../components/ChampionshipNavigation.astro';
+import ChampionshipLayout from '../../layouts/ChampionshipLayout.astro';
 ---
-<Layout title="Meine Spiele">
-  <SectionContainer aria-labelledby="title">
-    <a href="/meisterschaften/" class="text-sm font-semibold underline underline-offset-4">Einzelmeisterschaften</a>
-    <h1 id="title" class="mt-4 text-4xl font-bold text-[#173a2e]">Meine Spiele</h1>
-    <ChampionshipNavigation />
+<ChampionshipLayout title="Meine Spiele">
     <a id="my-matches-login" hidden href="/meisterschaften/anmelden/" class:list={[championshipButton.primary, 'mt-3']}>Anmelden</a>
     <p id="match-status" class="mt-4" role="status">Spiele werden geladen …</p>
     <div id="match-list" class="mt-5 grid gap-4 sm:grid-cols-2"></div>
-  </SectionContainer>
-</Layout>
+</ChampionshipLayout>
 
 <script>
   import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
-  const list = document.querySelector('#match-list')!;
-  const status = document.querySelector('#match-status')!;
-  const labels: Record<string, string> = { open: 'Offen', submitted: 'Wartet auf Bestätigung', disputed: 'Strittig',
-    confirmed: 'Bestätigt', completed: 'Abgeschlossen' };
-  type Match = { id: string; version: number; status: string; title: string; home: string | null; away: string | null;
-    officialScore?: string | null; proposedScore: string | null; action: 'review' | 'submit' | 'correct' | null };
-  const element = <K extends keyof HTMLElementTagNameMap>(tag: K, label: string, classes: string) => {
-    const node = document.createElement(tag);
-    node.textContent = label;
-    node.className = classes;
-    return node;
-  };
-  const buttonClasses = championshipButton.primary;
+  function initializeMatches() {
+    const root = document.querySelector<HTMLElement>('[data-championship-page]');
+    if (!root?.querySelector('#match-list')) return;
+    const page = root;
+    const list = page.querySelector('#match-list')!;
+    const status = page.querySelector('#match-status')!;
+    const labels: Record<string, string> = { open: 'Offen', submitted: 'Wartet auf Bestätigung', disputed: 'Strittig',
+      confirmed: 'Bestätigt', completed: 'Abgeschlossen' };
+    type Match = { id: string; version: number; status: string; title: string; home: string | null; away: string | null;
+      officialScore?: string | null; proposedScore: string | null; action: 'review' | 'submit' | 'correct' | null };
+    const element = <K extends keyof HTMLElementTagNameMap>(tag: K, label: string, classes: string) => {
+      const node = document.createElement(tag);
+      node.textContent = label;
+      node.className = classes;
+      return node;
+    };
+    const buttonClasses = championshipButton.primary;
 
-  async function change(match: Match, action: string, error: HTMLElement, button: HTMLButtonElement, score?: number[][], reason?: string) {
-    button.disabled = true;
-    error.textContent = '';
-    try {
-      const response = await fetch(`/api/spiele/${encodeURIComponent(match.id)}/${action}`, { method: 'POST',
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: match.version, score, reason }) });
-      if (!response.ok) {
-        const result = await response.json();
-        throw new Error(result.error ?? 'Speichern fehlgeschlagen.');
-      }
-      await load();
-    } catch (failure) { error.textContent = failure instanceof Error ? failure.message : 'Speichern fehlgeschlagen.'; }
-    finally { button.disabled = false; }
-  }
-
-  function show(match: Match) {
-    const card = element('article', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6');
-    card.append(element('p', match.title, 'text-sm text-[#4c5d52]'),
-      element('h2', `${match.home ?? 'Offen'} – ${match.away ?? 'Offen'}`, 'mt-2 text-lg font-bold break-words'),
-      element('p', labels[match.status] ?? '', 'my-3 text-sm font-semibold'));
-    const formatScore = (score: number[][]) => score.map(set => set.join(':')).join(', ');
-    const official: number[][] | null = match.officialScore ? JSON.parse(match.officialScore) : null;
-    if (official?.length) card.append(element('p', `Bestätigtes Ergebnis: ${formatScore(official)}`, 'mb-3 text-sm font-semibold'));
-    if (match.proposedScore && match.status === 'confirmed') card.append(element('p', 'Korrektur wartet auf Bestätigung.', 'mb-3 text-sm'));
-    const error = element('p', '', 'mt-2 text-sm text-red-800');
-    error.setAttribute('role', 'status');
-    if (match.action === 'submit' || match.action === 'correct') {
-      const correcting = match.action === 'correct';
-      const prefill: number[][] | null = match.proposedScore ? JSON.parse(match.proposedScore) : official;
-      const form = element('form', '', 'grid gap-2');
-      form.method = 'post';
-      const sets: HTMLInputElement[][] = [];
-      for (let set = 1; set <= 3; set++) {
-        const field = element('fieldset', '', 'grid grid-cols-2 gap-2');
-        field.append(element('legend', `Satz ${set}${set === 3 ? ' (falls nötig)' : ''}`, 'text-sm font-semibold'));
-        const inputs = [match.home, match.away].map((player, index) => {
-          const label = element('label', player ?? `Spieler ${index + 1}`, 'min-w-0! mb-1! break-words');
-          const input = element('input', '', 'min-h-11 rounded-lg');
-          input.type = 'number'; input.min = '0'; input.max = '7'; input.inputMode = 'numeric'; input.required = set < 3;
-          input.value = prefill?.[set - 1]?.[index]?.toString() ?? '';
-          label.append(input); field.append(label); return input;
-        });
-        sets.push(inputs);
-        form.append(field);
-      }
-      const reason = element('input', '', 'min-h-11 rounded-lg');
-      if (correcting) {
-        const label = element('label', 'Grund der Korrektur', 'mb-1!');
-        reason.required = true;
-        reason.maxLength = 500;
-        label.append(reason);
-        form.append(label);
-      }
-      const submit = element('button', correcting ? 'Korrektur vorschlagen' : 'Ergebnis melden', buttonClasses);
-      form.append(submit);
-      form.addEventListener('submit', event => {
-        event.preventDefault();
-        const entered = sets.filter(set => set.some(input => input.value !== ''));
-        if (entered.some((set, index) => set !== sets[index] || set.some(input => input.value === ''))) { error.textContent = 'Bitte die Satzstände der Reihe nach vollständig eintragen.'; return; }
-        const score = entered.map(set => set.map(input => Number(input.value)));
-        if (correcting && !reason.value.trim()) { error.textContent = 'Bitte gib einen Grund an.'; return; }
-        if (confirm(`Ergebnis ${formatScore(score)} ${correcting ? 'als Korrektur vorschlagen' : 'melden'}?`)) {
-          void change(match, correcting ? 'korrektur-vorschlagen' : 'ergebnis', error, submit, score, reason.value.trim());
+    async function change(match: Match, action: string, error: HTMLElement, button: HTMLButtonElement, score?: number[][], reason?: string) {
+      button.disabled = true;
+      error.textContent = '';
+      try {
+        const response = await fetch(`/api/spiele/${encodeURIComponent(match.id)}/${action}`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ version: match.version, score, reason }) });
+        if (!response.ok) {
+          const result = await response.json();
+          throw new Error(result.error ?? 'Speichern fehlgeschlagen.');
         }
-      });
-      if (correcting) {
-        const edit = element('details', '', 'border-t border-[#d9dbd0] pt-3');
-        edit.append(element('summary', 'Ergebnis korrigieren', 'mb-3 cursor-pointer text-sm font-semibold underline underline-offset-4'), form);
-        card.append(edit);
-      } else card.append(form);
-    } else if (match.action === 'review' && match.proposedScore) {
-      const score: number[][] = JSON.parse(match.proposedScore);
-      const buttons = element('div', '', 'flex flex-wrap gap-2');
-      for (const [name, action] of [['Bestätigen', 'bestaetigen'], ['Beanstanden', 'beanstanden']]) {
-        const button = element('button', name, buttonClasses);
-        button.onclick = () => { if (confirm(`${name}?`)) void change(match, action, error, button); };
-        buttons.append(button);
-      }
-      card.append(element('p', `Vorschlag: ${formatScore(score)}`, 'mb-3 font-bold'), buttons);
+        await load();
+      } catch (failure) { error.textContent = failure instanceof Error ? failure.message : 'Speichern fehlgeschlagen.'; }
+      finally { button.disabled = false; }
     }
-    card.append(error);
-    return card;
-  }
 
-  async function load() {
-    const response = await fetch('/api/meine-spiele');
-    document.querySelector<HTMLElement>('#my-matches-login')!.hidden = response.status !== 401;
-    if (!response.ok) { status.textContent = response.status === 401 ? 'Melde dich an, um deine Begegnungen zu sehen.' : 'Spiele sind derzeit nicht verfügbar.'; return; }
-    const matches: Match[] = await response.json();
-    status.textContent = matches.length ? '' : 'Dir sind noch keine Begegnungen zugeordnet.';
-    list.replaceChildren(...matches.map(show));
+    function show(match: Match) {
+      const card = element('article', '', 'rounded-xl border border-[#d9dbd0] bg-white p-4 sm:p-6');
+      card.append(element('p', match.title, 'text-sm text-[#4c5d52]'),
+        element('h2', `${match.home ?? 'Offen'} – ${match.away ?? 'Offen'}`, 'mt-2 text-lg font-bold break-words'),
+        element('p', labels[match.status] ?? '', 'my-3 text-sm font-semibold'));
+      const formatScore = (score: number[][]) => score.map(set => set.join(':')).join(', ');
+      const official: number[][] | null = match.officialScore ? JSON.parse(match.officialScore) : null;
+      if (official?.length) card.append(element('p', `Bestätigtes Ergebnis: ${formatScore(official)}`, 'mb-3 text-sm font-semibold'));
+      if (match.proposedScore && match.status === 'confirmed') card.append(element('p', 'Korrektur wartet auf Bestätigung.', 'mb-3 text-sm'));
+      const error = element('p', '', 'mt-2 text-sm text-red-800');
+      error.setAttribute('role', 'status');
+      if (match.action === 'submit' || match.action === 'correct') {
+        const correcting = match.action === 'correct';
+        const prefill: number[][] | null = match.proposedScore ? JSON.parse(match.proposedScore) : official;
+        const form = element('form', '', 'grid gap-2');
+        form.method = 'post';
+        const sets: HTMLInputElement[][] = [];
+        for (let set = 1; set <= 3; set++) {
+          const field = element('fieldset', '', 'grid grid-cols-2 gap-2');
+          field.append(element('legend', `Satz ${set}${set === 3 ? ' (falls nötig)' : ''}`, 'text-sm font-semibold'));
+          const inputs = [match.home, match.away].map((player, index) => {
+            const label = element('label', player ?? `Spieler ${index + 1}`, 'min-w-0! mb-1! break-words');
+            const input = element('input', '', 'min-h-11 rounded-lg');
+            input.type = 'number'; input.min = '0'; input.max = '7'; input.inputMode = 'numeric'; input.required = set < 3;
+            input.value = prefill?.[set - 1]?.[index]?.toString() ?? '';
+            label.append(input); field.append(label); return input;
+          });
+          sets.push(inputs);
+          form.append(field);
+        }
+        const reason = element('input', '', 'min-h-11 rounded-lg');
+        if (correcting) {
+          const label = element('label', 'Grund der Korrektur', 'mb-1!');
+          reason.required = true;
+          reason.maxLength = 500;
+          label.append(reason);
+          form.append(label);
+        }
+        const submit = element('button', correcting ? 'Korrektur vorschlagen' : 'Ergebnis melden', buttonClasses);
+        form.append(submit);
+        form.addEventListener('submit', event => {
+          event.preventDefault();
+          const entered = sets.filter(set => set.some(input => input.value !== ''));
+          if (entered.some((set, index) => set !== sets[index] || set.some(input => input.value === ''))) { error.textContent = 'Bitte die Satzstände der Reihe nach vollständig eintragen.'; return; }
+          const score = entered.map(set => set.map(input => Number(input.value)));
+          if (correcting && !reason.value.trim()) { error.textContent = 'Bitte gib einen Grund an.'; return; }
+          if (confirm(`Ergebnis ${formatScore(score)} ${correcting ? 'als Korrektur vorschlagen' : 'melden'}?`)) {
+            void change(match, correcting ? 'korrektur-vorschlagen' : 'ergebnis', error, submit, score, reason.value.trim());
+          }
+        });
+        if (correcting) {
+          const edit = element('details', '', 'border-t border-[#d9dbd0] pt-3');
+          edit.append(element('summary', 'Ergebnis korrigieren', 'mb-3 cursor-pointer text-sm font-semibold underline underline-offset-4'), form);
+          card.append(edit);
+        } else card.append(form);
+      } else if (match.action === 'review' && match.proposedScore) {
+        const score: number[][] = JSON.parse(match.proposedScore);
+        const buttons = element('div', '', 'flex flex-wrap gap-2');
+        for (const [name, action] of [['Bestätigen', 'bestaetigen'], ['Beanstanden', 'beanstanden']]) {
+          const button = element('button', name, buttonClasses);
+          button.onclick = () => { if (confirm(`${name}?`)) void change(match, action, error, button); };
+          buttons.append(button);
+        }
+        card.append(element('p', `Vorschlag: ${formatScore(score)}`, 'mb-3 font-bold'), buttons);
+      }
+      card.append(error);
+      return card;
+    }
+
+    async function load() {
+      const response = await fetch('/api/meine-spiele');
+      page.querySelector<HTMLElement>('#my-matches-login')!.hidden = response.status !== 401;
+      if (!response.ok) { status.textContent = response.status === 401 ? 'Melde dich an, um deine Begegnungen zu sehen.' : 'Spiele sind derzeit nicht verfügbar.'; return; }
+      const matches: Match[] = await response.json();
+      status.textContent = matches.length ? '' : 'Dir sind noch keine Begegnungen zugeordnet.';
+      list.replaceChildren(...matches.map(show));
+    }
+    load().catch(() => { status.textContent = 'Spiele konnten nicht geladen werden.'; });
   }
-  load().catch(() => { status.textContent = 'Spiele konnten nicht geladen werden.'; });
+  document.addEventListener('astro:page-load', initializeMatches);
 </script>

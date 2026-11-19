@@ -1,14 +1,9 @@
 ---
 import { championshipButton } from '../../scripts/meisterschaft-buttons.ts';
-import Layout from '../../layouts/Layout.astro';
-import SectionContainer from '../../components/ui/SectionContainer.astro';
-import ChampionshipNavigation from '../../components/ChampionshipNavigation.astro';
+import ChampionshipLayout from '../../layouts/ChampionshipLayout.astro';
 ---
-<Layout title="Bei den Einzelmeisterschaften anmelden">
-  <SectionContainer aria-labelledby="title">
-    <ChampionshipNavigation />
+<ChampionshipLayout title="Anmelden">
     <div class="max-w-lg rounded-xl border border-[#d9dbd0] bg-white p-5 sm:p-8">
-      <h1 id="title" class="text-3xl font-bold text-[#173a2e]">Anmelden</h1>
       <form id="password-form" method="post" class="mt-5 border-b border-[#d9dbd0] pb-5" aria-label="Admin-Anmeldung">
         <h2 class="mb-3 text-lg font-semibold">Admin-Anmeldung</h2>
         <label>E-Mail-Adresse<input type="email" name="email" required autocomplete="username" maxlength="254" /></label>
@@ -24,60 +19,66 @@ import ChampionshipNavigation from '../../components/ChampionshipNavigation.astr
       <p id="login-status" role="status" class="my-4 text-sm"></p>
       <button id="logout" class={championshipButton.secondary}>Abmelden</button>
     </div>
-  </SectionContainer>
-</Layout>
+</ChampionshipLayout>
 
 <script>
-  const form = document.querySelector<HTMLFormElement>('#email-form')!;
-  const passwordForm = document.querySelector<HTMLFormElement>('#password-form')!;
-  const verify = document.querySelector<HTMLButtonElement>('#verify')!;
-  const logout = document.querySelector<HTMLButtonElement>('#logout')!;
-  const status = document.querySelector('#login-status')!;
-  const token = location.hash.slice(1);
-  const params = new URLSearchParams(location.search);
-  const target = params.get('meisterschaft');
-  const validBooking = (value: string | null) => value === 'moenichwald' || value === 'waldbach' ? value : null;
-  const bookingTarget = validBooking(params.get('buchung'));
-  function bookingDestination(fromEmail = false) {
-    let site = bookingTarget;
-    try {
-      if (fromEmail && !site) site = validBooking(localStorage.getItem('tv-booking-return'));
-      localStorage.removeItem('tv-booking-return');
-    } catch { /* Storage may be disabled in the browser. */ }
-    return site ? `/platzbuchung/?standort=${site}` : null;
-  }
-  if (token) history.replaceState(null, '', location.pathname);
-  if (/^[a-f0-9]{64}$/.test(token)) { verify.hidden = false; form.hidden = true; passwordForm.hidden = true; }
-  async function send(action: string, body: object, button: HTMLButtonElement) {
-    button.disabled = true;
-    status.textContent = '';
-    try {
-      const response = await fetch(`/api/meisterschaft-login/${action}`, { method: 'POST',
-        headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error ?? 'Anmeldung fehlgeschlagen.');
-      return true;
-    } catch (error) { status.textContent = error instanceof Error ? error.message : 'Anmeldung fehlgeschlagen.'; return false; }
-    finally { button.disabled = false; }
-  }
-  form.addEventListener('submit', async event => {
-    event.preventDefault();
-    if (await send('link', { email: new FormData(form).get('email') }, form.querySelector('button')!)) {
+
+  function initializeLogin() {
+    const root = document.querySelector<HTMLElement>('[data-championship-page]');
+    if (!root?.querySelector('#email-form')) return;
+    const page = root;
+    const form = page.querySelector<HTMLFormElement>('#email-form')!;
+    const passwordForm = page.querySelector<HTMLFormElement>('#password-form')!;
+    const verify = page.querySelector<HTMLButtonElement>('#verify')!;
+    const logout = page.querySelector<HTMLButtonElement>('#logout')!;
+    const status = page.querySelector('#login-status')!;
+    const token = location.hash.slice(1);
+    const params = new URLSearchParams(location.search);
+    const target = params.get('meisterschaft');
+    const validBooking = (value: string | null) => value === 'moenichwald' || value === 'waldbach' ? value : null;
+    const bookingTarget = validBooking(params.get('buchung'));
+    function bookingDestination(fromEmail = false) {
+      let site = bookingTarget;
       try {
-        if (bookingTarget) localStorage.setItem('tv-booking-return', bookingTarget);
-        else localStorage.removeItem('tv-booking-return');
-      } catch { /* The email still allows sign-in without browser storage. */ }
-      status.textContent = 'Wenn deine Adresse freigeschaltet ist, erhältst du eine E-Mail.';
+        if (fromEmail && !site) site = validBooking(localStorage.getItem('tv-booking-return'));
+        localStorage.removeItem('tv-booking-return');
+      } catch { /* Storage may be disabled in the browser. */ }
+      return site ? `/platzbuchung/?standort=${site}` : null;
     }
-  });
-  passwordForm.addEventListener('submit', async event => {
-    event.preventDefault();
-    if (await send('passwort', Object.fromEntries(new FormData(passwordForm)), passwordForm.querySelector('button')!)) {
-      passwordForm.reset();
-      location.href = bookingDestination() ?? (target && /^[a-zA-Z0-9_-]{1,80}$/.test(target)
-        ? `/meisterschaften/admin/?id=${encodeURIComponent(target)}` : '/meisterschaften/admin/');
+    if (token) history.replaceState(null, '', location.pathname);
+    if (/^[a-f0-9]{64}$/.test(token)) { verify.hidden = false; form.hidden = true; passwordForm.hidden = true; }
+    async function send(action: string, body: object, button: HTMLButtonElement) {
+      button.disabled = true;
+      status.textContent = '';
+      try {
+        const response = await fetch(`/api/meisterschaft-login/${action}`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error ?? 'Anmeldung fehlgeschlagen.');
+        return true;
+      } catch (error) { status.textContent = error instanceof Error ? error.message : 'Anmeldung fehlgeschlagen.'; return false; }
+      finally { button.disabled = false; }
     }
-  });
-  verify.onclick = async () => { if (await send('bestaetigen', { token }, verify)) location.href = bookingDestination(true) ?? '/meisterschaften/meine-spiele/'; };
-  logout.onclick = async () => { if (await send('abmelden', {}, logout)) location.href = '/meisterschaften/'; };
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (await send('link', { email: new FormData(form).get('email') }, form.querySelector('button')!)) {
+        try {
+          if (bookingTarget) localStorage.setItem('tv-booking-return', bookingTarget);
+          else localStorage.removeItem('tv-booking-return');
+        } catch { /* The email still allows sign-in without browser storage. */ }
+        status.textContent = 'Wenn deine Adresse freigeschaltet ist, erhältst du eine E-Mail.';
+      }
+    });
+    passwordForm.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (await send('passwort', Object.fromEntries(new FormData(passwordForm)), passwordForm.querySelector('button')!)) {
+        passwordForm.reset();
+        location.href = bookingDestination() ?? (target && /^[a-zA-Z0-9_-]{1,80}$/.test(target)
+          ? `/meisterschaften/admin/?id=${encodeURIComponent(target)}` : '/meisterschaften/admin/');
+      }
+    });
+    verify.onclick = async () => { if (await send('bestaetigen', { token }, verify)) location.href = bookingDestination(true) ?? '/meisterschaften/meine-spiele/'; };
+    logout.onclick = async () => { if (await send('abmelden', {}, logout)) location.href = '/meisterschaften/'; };
+  }
+  document.addEventListener('astro:page-load', initializeLogin);
 </script>

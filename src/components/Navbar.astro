@@ -45,17 +45,23 @@ const linkClass = 'rounded-lg px-3 py-2.5 text-sm font-medium hover:text-emerald
 </header>
 
 <script>
-  for (const disclosure of document.querySelectorAll<HTMLDetailsElement>('[data-mobile-navigation]')) {
-    disclosure.addEventListener('keydown', (event) => {
-      if (event.key !== 'Escape' || !disclosure.open) return;
-      event.preventDefault();
-      disclosure.open = false;
-      disclosure.querySelector('summary')?.focus();
-    });
-    disclosure.addEventListener('click', (event) => {
-      if (event.target instanceof Element && event.target.closest('a[href]')) {
+  function initializeMobileNavigation() {
+    for (const disclosure of document.querySelectorAll<HTMLDetailsElement>('[data-mobile-navigation]')) {
+      if (disclosure.dataset.initialized) continue;
+      disclosure.dataset.initialized = 'true';
+      disclosure.addEventListener('keydown', (event) => {
+        if (event.key !== 'Escape' || !disclosure.open) return;
+        event.preventDefault();
         disclosure.open = false;
-      }
-    });
+        disclosure.querySelector('summary')?.focus();
+      });
+      disclosure.addEventListener('click', (event) => {
+        if (event.target instanceof Element && event.target.closest('a[href]')) {
+          disclosure.open = false;
+        }
+      });
+    }
   }
+  initializeMobileNavigation();
+  document.addEventListener('astro:page-load', initializeMobileNavigation);
 </script>

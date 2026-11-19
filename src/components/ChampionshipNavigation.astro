@@ -8,14 +8,14 @@ const links = [
   { id: 'championship-admin', href: '/meisterschaften/admin/', label: 'Verwaltung', Icon: Settings2, access: 'admin' },
 ];
 ---
-<nav aria-label="Meisterschaftsbereich" class="static! my-7 flex! flex-col items-stretch! gap-3! bg-transparent! p-0! shadow-none! sm:flex-row sm:flex-wrap">
+<nav transition:name="championship-navigation" transition:animate="none" aria-label="Meisterschaftsbereich" class="static! my-7 flex! flex-col items-stretch! gap-3! bg-transparent! p-0! shadow-none! sm:flex-row sm:flex-wrap">
   {links.map(({ id, href, label, Icon, access }) => {
     const selected = path === href.replace(/\/$/, '');
     return (
       <a id={id} href={href} hidden={access !== 'public'} data-championship-access={access}
         aria-current={selected ? 'page' : undefined}
         class:list={[
-          'group flex min-h-24 min-w-0 flex-1 items-center gap-4 rounded-2xl border p-5 no-underline! transition-colors focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700 sm:min-w-56',
+          'group flex min-h-24 min-w-0 flex-1 items-center gap-4 rounded-2xl border p-5 no-underline! motion-safe:transition-colors motion-safe:duration-150 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-orange-700 sm:min-w-56',
           selected
             ? 'border-orange-700 bg-orange-700 text-white! hover:bg-orange-800'
             : 'border-stone-200 bg-white text-slate-900! hover:border-orange-700 hover:bg-orange-50',
@@ -32,26 +32,39 @@ const links = [
 </nav>
 
 <script>
-  async function refreshChampionshipNavigation() {
-    const links = document.querySelectorAll<HTMLAnchorElement>('[data-championship-access]');
-    for (const link of links) link.hidden = link.dataset.championshipAccess !== 'public';
-    try {
-      const response = await fetch('/api/meisterschaft-session', { cache: 'no-store' });
-      if (!response.ok) return;
-      const { role } = await response.json();
-      const signedIn = role === 'member' || role === 'admin';
-      for (const link of links) {
-        const access = link.dataset.championshipAccess;
-        link.hidden = access === 'admin' ? role !== 'admin' : access === 'member' ? !signedIn : false;
-        if (access === 'public') link.querySelector('[data-navigation-label]')!.textContent =
-          signedIn ? 'Vereinskonto' : 'Vereinslogin · Anmelden';
-        if (access === 'admin') {
-          const id = new URLSearchParams(location.search).get('id');
-          link.href = '/meisterschaften/admin/' + (id ? `?id=${encodeURIComponent(id)}` : '');
-        }
+  import { championshipRole } from '../scripts/meisterschaft-session.ts';
+
+  function applyRole(target: Document, role: 'admin' | 'member' | null, url: URL) {
+    const links = target.querySelectorAll<HTMLAnchorElement>('[data-championship-access]');
+    const signedIn = role === 'member' || role === 'admin';
+    for (const link of links) {
+      const access = link.dataset.championshipAccess;
+      link.hidden = access === 'admin' ? role !== 'admin' : access === 'member' ? !signedIn : false;
+      if (access === 'public') link.querySelector('[data-navigation-label]')!.textContent =
+        signedIn ? 'Vereinskonto' : 'Vereinslogin · Anmelden';
+      if (access === 'admin') {
+        const id = url.searchParams.get('id');
+        link.href = '/meisterschaften/admin/' + (id ? `?id=${encodeURIComponent(id)}` : '');
       }
-    } catch { /* Protected links remain hidden if the session cannot be checked. */ }
+    }
   }
-  void refreshChampionshipNavigation();
-  window.addEventListener('pageshow', event => { if (event.persisted) void refreshChampionshipNavigation(); });
+
+  async function refreshChampionshipNavigation() {
+    try {
+      applyRole(document, await championshipRole(), new URL(location.href));
+    } catch { applyRole(document, null, new URL(location.href)); }
+  }
+  document.addEventListener('astro:before-preparation', event => {
+    const originalLoader = event.loader;
+    event.loader = async () => {
+      const [, role] = await Promise.all([originalLoader(), championshipRole(true).catch(() => null)]);
+      applyRole(event.newDocument, role, event.to);
+    };
+  });
+  document.addEventListener('astro:page-load', refreshChampionshipNavigation);
+  window.addEventListener('pageshow', event => {
+    if (event.persisted) {
+      void championshipRole(true).catch(() => null).then(role => applyRole(document, role, new URL(location.href)));
+    }
+  });
 </script>

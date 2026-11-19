@@ -13,6 +13,7 @@
     "check": "node scripts/astro.mjs check",
     "test": "node scripts/redirect-data.mjs && node --test tests/*.test.mjs",
     "test:mobile": "node tests/championships-mobile.browser.mjs",
+    "test:navigation": "node tests/championship-navigation.browser.mjs",
     "verify": "node scripts/verify.mjs",
     "migrate": "node scripts/migrate.mjs"
   },

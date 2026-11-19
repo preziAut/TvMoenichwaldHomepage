@@ -2,16 +2,19 @@
 import '../styles/global.css';
 import { site } from '../config';
 import Navbar from '../components/Navbar.astro';
+import { ClientRouter } from 'astro:transitions';
 
 interface Props {
   title: string;
   description?: string;
   noindex?: boolean;
+  championshipNavigation?: boolean;
 }
 
 const {
   title,
   noindex = false,
+  championshipNavigation = false,
   description = 'Tennis, Gemeinschaft und Vereinsleben in Mönichwald. Termine, Bilder und Platzreservierung beim TV Mönichwald.',
 } = Astro.props;
 
@@ -23,6 +26,7 @@ const link = 'text-[#e4ebdf] hover:text-[#e2f28d]';
 <!doctype html>
 <html lang="de">
   <head>
+    {championshipNavigation && <ClientRouter />}
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · TV Mönichwald</title>
@@ -36,7 +40,7 @@ const link = 'text-[#e4ebdf] hover:text-[#e2f28d]';
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     {(noindex || import.meta.env.PUBLIC_SITE_APPROVED !== 'true') && <meta name="robots" content="noindex,nofollow" />}
   </head>
-  <body class="flex min-h-screen flex-col bg-[#f7f5ed]! font-['Instrument_Sans',system-ui,sans-serif]! text-[#152b23]!">
+  <body transition:animate={championshipNavigation ? 'none' : undefined} class="flex min-h-screen flex-col bg-[#f7f5ed]! font-['Instrument_Sans',system-ui,sans-serif]! text-[#152b23]!">
     <a class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-white focus:p-3 focus:text-indigo-700" href="#inhalt">Zum Inhalt</a>
 
     <slot name="header"><Navbar /></slot>
